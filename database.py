@@ -158,3 +158,6 @@ class DataBase:
         self.cnx.commit()
         cursor.close()
         return
+
+    def getAllVoices(self):
+        return

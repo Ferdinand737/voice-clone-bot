@@ -74,3 +74,6 @@ class ElevenLabs:
 
         response = requests.get(url, headers=headers)
         return json.loads(response.text)['next_character_count_reset_unix']
+
+    def deleteVoicesNotInDb(self, voicesInDb):
+        return

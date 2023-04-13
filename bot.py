@@ -47,7 +47,9 @@ def checkUser(user):
 
     return foundUser
 
+#add a function to parse args
 
+#different for members
 @bot.command(name='help')
 async def help(ctx):
     embed = discord.Embed(title="Help",color=0x0000ff)
@@ -56,7 +58,7 @@ async def help(ctx):
                                             !speak <VoiceName> <gpt> | <Hello World!>\n\n
                                             Examples:\n
                                             >>   !speak JordanPeterson gpt | Tell me a story\n
-                                            >>  !speak JordanPeterson | Say exactly this sentance""")
+                                            >>  !speak JordanPeterson | Say exactly this sentence""")
 
     embed.add_field(name="!add",value="""New Voice is added. Attached files will be used as samples for new voice\n\n
                                             Example:\n
@@ -154,7 +156,9 @@ async def speak(ctx):
     else:
         await ctx.send(embed=makeErrorMessage('I am already playing an audio file. Please wait until I finish.'))
     
-        
+    #add clickable emoji for replay?
+    
+#only for members
 @bot.command(name='add')
 async def add(ctx,*,content:str):
     user = checkUser(ctx.author)
@@ -219,29 +223,28 @@ async def add(ctx,*,content:str):
 
 #new command !voices
 #list available voices for that user
-#/myVoices
+#/thisServer
 #/public
+
+#new command !list
+#list users outputs
+
+#add args 'prompt_id'
+#can only download your own prompts
+# @bot.command(name='download')
+# async def download(ctx):
+#     await ctx.send(file=discord.File("audioOutput/output.mp3"))
 
 #new command !update 'voice'
 #Add more samples to voice
 #can only update voices you created
 
-#new command !delete name
-#delete voice 'name'
+#new command !delete 'voice'
+#delete voice 'voice'
 #can only delete voices you created
-
-#add args 'filename'
-# @bot.command(name='download')
-# async def download(ctx):
-#     await ctx.send(file=discord.File("audioOutput/output.mp3"))
-
 
 #new command !chat
 #just uses gpt4 (no voice cloning)
-
-
-#new command !list
-#list users outputs
 
 #new command !replay ouput
 #play the selected output again
@@ -254,12 +257,10 @@ async def add(ctx,*,content:str):
 #display usage stats for that user
 #display char limit, char count and refresh date
 
-#new command !admin
-#check that its me
-
-
-
-
+#new command !donate
+#beg for money
+#donate to add voices
+#display my crypto wallet addresses
 
 db = DataBase()
 db.connect()
