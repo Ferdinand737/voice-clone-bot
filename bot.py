@@ -57,7 +57,7 @@ async def help(ctx):
                                             Examples:\n
                                             >>   !speak JordanPeterson gpt | Tell me a story\n
                                             >>  !speak JordanPeterson | Say exactly this sentance""")
-                                            
+
     embed.add_field(name="!add",value="""New Voice is added. Attached files will be used as samples for new voice\n\n
                                             Example:\n
                                             >>  !add JordanPeterson""")
@@ -103,11 +103,11 @@ async def speak(ctx):
     argsList = args.split(" ")
 
     if len(argsList) > 1:
-        gpt = argsList[1].strip() == "gpt"
+        gpt = argsList[2].strip() == "gpt"
     else:
         gpt = False
 
-    voiceName = argsList[0].strip()
+    voiceName = argsList[1].strip()
 
     if gpt:
         try:
