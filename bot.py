@@ -102,7 +102,7 @@ async def speak(ctx):
 
     argsList = args.split(" ")
 
-    if len(argsList) > 1:
+    if len(argsList) > 2:
         gpt = argsList[2].strip() == "gpt"
     else:
         gpt = False
