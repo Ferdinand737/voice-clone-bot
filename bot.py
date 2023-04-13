@@ -1,4 +1,5 @@
 #https://discord.com/api/oauth2/authorize?client_id=1095014597871804510&permissions=3267136&scope=bot
+#https://discord.com/api/oauth2/authorize?client_id=1095890592753528872&permissions=3196928&scope=bot Dev
 
 import os
 import discord
@@ -9,7 +10,7 @@ from dotenv import load_dotenv
 from elevenLabs import ElevenLabs
 import openai
 from database import DataBase
-import datetime
+from datetime import datetime, timedelta, timezone
 
 footer_msg = "This bot was created by: JEFF#1778"
 load_dotenv()
@@ -21,9 +22,7 @@ eLabs = ElevenLabs(os.getenv('ELEVENLABS_TOKEN'))
 openai.api_key = os.getenv('OPENAI_TOKEN')
 
 
-#new command !help
 
-#Make nice error messages if anything goes wrong
 def makeErrorMessage(reason):
     embed = discord.Embed(title="Error",color=0xff0000)
     embed.add_field(name="Reason",value=reason)
@@ -34,11 +33,11 @@ def checkUser(user):
 
     discordAccountDate = user.created_at
 
-    now = datetime.datetime.now(datetime.timezone.utc)
+    now = datetime.now(timezone.utc)
     
     date_difference = now - discordAccountDate
     
-    if date_difference < datetime.timedelta(days=30):
+    if date_difference < timedelta(days=30):
         return None
 
     foundUser = db.getUser(user)
@@ -52,28 +51,47 @@ def checkUser(user):
 @bot.command(name='help')
 async def help(ctx):
     embed = discord.Embed(title="Help",color=0x0000ff)
-    embed.add_field(name="!speak",value="Bot joins your channel and speaks the prompt output. OpenAi language model 'gpt' is optional\n\n!speak <VoiceName> <gpt> | <Hello World!>\n\nExamples:\n>>   !speak JordanPeterson gpt | Tell me a story\n>>  !speak JordanPeterson | Say exactly this sentance")
-    embed.add_field(name="!add",value="New Voice is added. Attached files will be used as samples for new voice\n\nExample:\n>>  !add JordanPeterson")
+    embed.add_field(name="!speak",value="""Bot joins your channel and speaks the prompt output. 
+                                            OpenAi language model 'gpt' is optional\n\n
+                                            !speak <VoiceName> <gpt> | <Hello World!>\n\n
+                                            Examples:\n
+                                            >>   !speak JordanPeterson gpt | Tell me a story\n
+                                            >>  !speak JordanPeterson | Say exactly this sentance""")
+                                            
+    embed.add_field(name="!add",value="""New Voice is added. Attached files will be used as samples for new voice\n\n
+                                            Example:\n
+                                            >>  !add JordanPeterson""")
     embed.set_footer(text=footer_msg)
     await ctx.send(embed=embed)
     return
-#save prompt and user info
-#save audio outputs => audioOutput/discordUserId/promptId_prompt.mp3
+
+
 @bot.command(name='speak')
-async def speak(ctx,*,content:str):
+async def speak(ctx):
+
+    content = ctx.message.content
+
+    voice = ctx.author.voice
+
+    if voice is None:
+        await ctx.send(embed=makeErrorMessage('You need to be in a voice channel to use this command.'))
+        return
+
+    channel = voice.channel
 
     user = checkUser(ctx.author)
     if user is None:
         await ctx.send(embed=makeErrorMessage("Your discord account is too new."))
         return
 
-    nextCharReset = eLabs.getCharCountResetDate()
-    lastCharReset = int(user['last_char_reset'].timestamp())
+    nextCharReset = datetime.fromtimestamp(eLabs.getCharCountResetDate())
+    lastCharReset = user['last_char_reset']
 
-    days_difference = (nextCharReset - lastCharReset) / (60 * 60 * 24)
+    days_difference = nextCharReset - lastCharReset
 
-    if days_difference > 30:
+    if days_difference > timedelta(days=30):
         db.resetMonthlyUserCharCount(user['user_id'])
+
         
     try:
         args = content.split("|")[0].strip()
@@ -101,7 +119,7 @@ async def speak(ctx,*,content:str):
         script = message
 
     if(len(script) + user['monthly_chars_used'] > user['monthly_char_limit']):
-        await ctx.send(embed=makeErrorMessage("You have reached your monthly character limit of " + str(user['monthly_char_limit']) + ".\n Your Characters will be reset on"))
+        await ctx.send(embed=makeErrorMessage("You have reached your monthly character limit of " + str(user['monthly_char_limit']) + ".\n Your Characters will be reset on " + nextCharReset.strftime('%b %-d, %Y')))
         return
 
     voice = db.getVoice(user['user_id'],voiceName)
@@ -110,7 +128,6 @@ async def speak(ctx,*,content:str):
         await ctx.send(embed=makeErrorMessage("could not find voice '" + str(voiceName) + "' in database."))
         return
 
-   
     prompt = db.addPrompt(args, user['user_id'], user['username'], message, script, len(script))
            
     outputPath = prompt['path']
@@ -120,27 +137,24 @@ async def speak(ctx,*,content:str):
 
     if ctx.voice_client is not None:
         await ctx.voice_client.disconnect()
+   
+    try:
+        voice_client: VoiceClient = await channel.connect()
+    except asyncio.TimeoutError:
+        return await ctx.send(embed=makeErrorMessage('Failed to connect to the voice channel. Please try again.'))
 
-    channel = ctx.author.voice.channel
-    if channel:
-        try:
-            voice_client: VoiceClient = await channel.connect()
-        except asyncio.TimeoutError:
-            return await ctx.send(embed=makeErrorMessage('Failed to connect to the voice channel. Please try again.'))
+    audio_source = discord.FFmpegPCMAudio(executable="ffmpeg", source=outputPath)
 
-        audio_source = discord.FFmpegPCMAudio(executable="ffmpeg", source=outputPath)
-        if not voice_client.is_playing():
-            voice_client.play(audio_source, after=lambda e: print('Finished playing', e))
+    if not voice_client.is_playing():
+        voice_client.play(audio_source, after=lambda e: print('Finished playing', e))
 
-            while voice_client.is_playing():
-                await asyncio.sleep(1)
-            await voice_client.disconnect()
-        else:
-            await ctx.send(embed=makeErrorMessage('I am already playing an audio file. Please wait until I finish.'))
+        while voice_client.is_playing():
+            await asyncio.sleep(1)
+        await voice_client.disconnect()
     else:
-        await ctx.send(embed=makeErrorMessage('You need to be in a voice channel to use this command.'))
-
-
+        await ctx.send(embed=makeErrorMessage('I am already playing an audio file. Please wait until I finish.'))
+    
+        
 @bot.command(name='add')
 async def add(ctx,*,content:str):
     user = checkUser(ctx.author)
@@ -180,6 +194,15 @@ async def add(ctx,*,content:str):
         return
 
     for file in files:
+        if file.size >= 1000000:
+            await ctx.send(embed=makeErrorMessage("Input file too large. All files must me under 10Mb"))
+            return
+
+        if file.content_type != 'audio/mpeg':
+            await ctx.send(embed=makeErrorMessage("Input file must be an audio file"))
+            return
+
+
         file_path = os.path.join(path, file.filename)
         await file.save(file_path)
 
@@ -194,18 +217,28 @@ async def add(ctx,*,content:str):
     await ctx.send(embed=embed)
 
 
+#new command !voices
+#list available voices for that user
+#/myVoices
+#/public
 
-
+#new command !update 'voice'
+#Add more samples to voice
+#can only update voices you created
 
 #new command !delete name
 #delete voice 'name'
 #can only delete voices you created
 
+#add args 'filename'
+# @bot.command(name='download')
+# async def download(ctx):
+#     await ctx.send(file=discord.File("audioOutput/output.mp3"))
+
+
 #new command !chat
 #just uses gpt4 (no voice cloning)
 
-#new command !voices
-#list available voices for that user
 
 #new command !list
 #list users outputs
@@ -223,13 +256,9 @@ async def add(ctx,*,content:str):
 
 #new command !admin
 #check that its me
-#arguments to set users char limits
 
 
-#add args 'filename'
-# @bot.command(name='download')
-# async def download(ctx):
-#     await ctx.send(file=discord.File("audioOutput/output.mp3"))
+
 
 
 db = DataBase()
