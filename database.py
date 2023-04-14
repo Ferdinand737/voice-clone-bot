@@ -69,6 +69,8 @@ class DataBase:
         sql = "SELECT * FROM users WHERE user_id=%s"
         cursor.execute(sql,(user.id,))
         result = self.cursorToDict(cursor)
+        self.cnx.commit() 
+        cursor.close()
         if len(result) == 0:
             return None
         return result[0]
@@ -80,27 +82,50 @@ class DataBase:
         cursor = self.cnx.cursor()
         sql = "INSERT INTO users (user_id, username) VALUES (%s,%s)"
         cursor.execute(sql,(user_id,username))
-        cursor.close()
         self.cnx.commit()
+        cursor.close()
         return self.getUser(user)
 
 
-    def getVoice(self,user_id,voice):
+    def getVoice(self, server_id, voice):
         cursor = self.cnx.cursor()
-        sql = "SELECT * FROM voices WHERE name=%s AND is_private=0 OR name=%s AND user_id=%s;"
-        cursor.execute(sql,(voice,voice,user_id))
+        sql = "SELECT * FROM voices WHERE name=%s AND server_id IS NULL OR name=%s AND server_id=%s;"
+        cursor.execute(sql,(voice, voice, server_id))
         result = self.cursorToDict(cursor)
+        self.cnx.commit()
+        cursor.close()
         if len(result) == 0:
             return None
         return result[0]
 
-
-    def addVoice(self, voice_id, voiceName, isPrivate, user_id, path):
+    def getServerVoice(self, server_id, voice):
         cursor = self.cnx.cursor()
-        sql = "INSERT INTO voices (voice_id,name,is_private,user_id,path) VALUES (%s,%s,%s,%s,%s)"
-        cursor.execute(sql,(voice_id, voiceName, isPrivate, user_id, path))
-        cursor.close()
+        sql = "SELECT * FROM voices WHERE name=%s AND server_id=%s;"
+        cursor.execute(sql,(voice, server_id))
+        result = self.cursorToDict(cursor)
         self.cnx.commit()
+        cursor.close()
+        if len(result) == 0:
+            return None
+        return result[0]
+
+    def getPublicVoice(self, voice):
+        cursor = self.cnx.cursor()
+        sql = "SELECT * FROM voices WHERE name=%s AND server_id IS NULL;"
+        cursor.execute(sql,(voice,))
+        result = self.cursorToDict(cursor)
+        self.cnx.commit()
+        cursor.close()
+        if len(result) == 0:
+            return None
+        return result[0]
+
+    def addVoice(self, voice_id, voiceName, accent, serverId, serverName, user_id, path):
+        cursor = self.cnx.cursor()
+        sql = "INSERT INTO voices (voice_id, name, accent, server_id, server_name, user_id, path) VALUES (%s,%s,%s,%s,%s,%s,%s)"
+        cursor.execute(sql,(voice_id, voiceName, accent, serverId, serverName, user_id, path))
+        self.cnx.commit()
+        cursor.close()
         return
 
 
@@ -109,6 +134,7 @@ class DataBase:
         sql = "SELECT * FROM prompts WHERE prompt_id = %s;"
         cursor.execute(sql, (prompt_id,))
         result = self.cursorToDict(cursor)
+        self.cnx.commit()
         cursor.close()
 
         if len(result) == 0:
@@ -116,20 +142,26 @@ class DataBase:
         return result[0]
 
 
-    def addPrompt(self, command, user_id, username, prompt, response, numChars):
+    def addPrompt(self, args, voiceId, userId, serverId, response, numChars):
+        prompt = args['prompt']
+        gpt = '' if args['gpt'] == None else 'gpt'
+        command = '!chat' if voiceId == None else '!speak'
+        command = command + " " + str(args['voice']) + " " + gpt
         cursor = self.cnx.cursor()
-        sql = "INSERT INTO prompts (command, user_id, username, prompt, response, num_chars) VALUES (%s,%s,%s,%s,%s,%s);"
-        cursor.execute(sql, (command, user_id, username, prompt, response, numChars))
+        sql = "INSERT INTO prompts (command, voice_id, user_id, server_id, prompt, response, num_chars) VALUES (%s,%s,%s,%s,%s,%s,%s);"
+        cursor.execute(sql, (command, voiceId, userId, serverId, prompt, response, numChars))
         self.cnx.commit()
-
+        command = command.replace(" ", "_")
         cursor = self.cnx.cursor()
         sql = "UPDATE prompts SET path = CONCAT('audioOutput/', %s, '/', LAST_INSERT_ID(),'_',%s,'.mp3') WHERE prompt_id = LAST_INSERT_ID();"
-        cursor.execute(sql, (user_id,command))
+        cursor.execute(sql, (userId, command))
         self.cnx.commit()
 
         cursor.execute("SELECT LAST_INSERT_ID();")
-        prompt_id = cursor.fetchone()[0]
-        return self.getPrompt(prompt_id)
+        promptId = cursor.fetchone()[0]
+        self.cnx.commit()
+        cursor.close()
+        return self.getPrompt(promptId)
 
 
     def resetMonthlyUserCharCount(self,user_id):
@@ -159,5 +191,42 @@ class DataBase:
         cursor.close()
         return
 
-    def getAllVoices(self):
-        return
+    def getPublicVoices(self):
+        cursor = self.cnx.cursor()
+        sql = "SELECT * FROM voices WHERE server_id IS NULL"
+        cursor.execute(sql)
+        result = self.cursorToDict(cursor)
+        self.cnx.commit()
+        cursor.close()
+        if len(result) == 0:
+            return None
+        return result
+    
+    def getServerVoices(self, serverId):
+        cursor = self.cnx.cursor()
+        sql = "SELECT * FROM voices WHERE server_id=%s"
+        cursor.execute(sql,(serverId,))
+        result = self.cursorToDict(cursor)
+        self.cnx.commit()
+        cursor.close()
+        if len(result) == 0:
+            return None
+        return result
+
+    def getUserPrompts(self, userId, serverId, limit):
+        cursor = self.cnx.cursor()
+        sql = "SELECT * FROM prompts WHERE user_id=%s AND server_id=%s ORDER BY date_time DESC LIMIT %s"
+        cursor.execute(sql,(userId,serverId,limit))
+        result = self.cursorToDict(cursor)
+        self.cnx.commit()
+        cursor.close()
+        if len(result) == 0:
+            return None
+        return result
+    
+    def deleteVoice(self, voiceId):
+        cursor = self.cnx.cursor()
+        sql = "DELETE FROM voices WHERE voice_id=%s"
+        cursor.execute(sql,(voiceId,))
+        self.cnx.commit()
+        cursor.close()
