@@ -206,6 +206,12 @@ async def speak(ctx):
     if ctx.voice_client is not None:
         await ctx.voice_client.disconnect()
    
+    eLabsVoice = db.getVoice(serverId, args['voice'])
+
+    if eLabsVoice is None:
+        await ctx.send(embed=makeErrorMessage("could not find voice '" + str(args['voice']) + "' in database."))
+        return
+
     await ctx.send("Generating audio...")
 
     try:
@@ -225,12 +231,6 @@ async def speak(ctx):
 
     if(len(script) + user['monthly_chars_used'] > user['monthly_char_limit']):
         await ctx.send(embed=makeErrorMessage("You have reached your monthly character limit of " + str(user['monthly_char_limit']) + ".\n Your Characters will be reset on " + nextCharReset.strftime('%b %-d, %Y')))
-        return
-
-    eLabsVoice = db.getVoice(serverId, args['voice'])
-
-    if eLabsVoice is None:
-        await ctx.send(embed=makeErrorMessage("could not find voice '" + str(args['voice']) + "' in database."))
         return
 
     prompt = db.addPrompt(args, eLabsVoice['voice_id'], user['user_id'], serverId, script, len(script))
