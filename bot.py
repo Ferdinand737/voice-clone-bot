@@ -205,7 +205,8 @@ async def speak(ctx):
 
     if args['gpt']:
         try:
-            script = openai.Completion.create(model="text-davinci-003",prompt=args['prompt'],temperature=0.7,max_tokens=150)["choices"][0]["text"]
+            openaiInput = args['prompt'] + " Do not cut off mid sentence"
+            script = openai.Completion.create(model="text-davinci-003",prompt=openaiInput,temperature=0.7,max_tokens=150)["choices"][0]["text"]
         except:
             await ctx.send(embed=makeErrorMessage("Problem with openAi"))
             return
@@ -310,8 +311,9 @@ async def add(ctx):
             await ctx.send(embed=makeErrorMessage("Input file too large. All files must me under 10Mb"))
             shutil.rmtree(path)
             return
-
-        if file.content_type != 'audio/mpeg':
+            
+        allowedTypes = ['audio/aac', 'audio/x-aac', 'audio/x-aiff', 'audio/ogg', 'audio/mpeg', 'audio/mp3', 'audio/mpeg3', 'audio/x-mpeg-3', 'audio/opus', 'audio/wav', 'audio/x-wav', 'audio/webm', 'audio/flac', 'audio/x-flac', 'audio/mp4']
+        if file.content_type not in allowedTypes:
             await ctx.send(embed=makeErrorMessage("Input file must be an audio file"))
             shutil.rmtree(path)
             return
