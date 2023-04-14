@@ -1,4 +1,4 @@
-#https://discord.com/api/oauth2/authorize?client_id=1095014597871804510&permissions=3267136&scope=bot
+#https://discord.com/api/oauth2/authorize?client_id=1095014597871804510&permissions=3196992&scope=bot
 #https://discord.com/api/oauth2/authorize?client_id=1095890592753528872&permissions=3196928&scope=bot Dev
 
 import os
@@ -80,7 +80,10 @@ def parseArgs(command):
         if len(args4) == 1:
             args4.insert(1, None)
         
-        args4.insert(2,command.split("|")[1].strip())
+        try:
+            args4.insert(2,command.split("|")[1].strip())
+        except IndexError:
+            return None
 
         if args4[1] != 'gpt':
             args4[1] == None
@@ -362,6 +365,7 @@ async def add(ctx):
     embed = discord.Embed(title="Available Voices", color=0x0000ff)
     embed.add_field(name="Public", value=publicVoicesStr, inline=False)
     embed.add_field(name="In " + str(serverName), value=thisServerVoicesStr, inline=False)
+    embed.set_footer(text=footer_msg)
     await ctx.send(embed=embed)
     
 
@@ -397,6 +401,7 @@ async def list(ctx):
         await ctx.send(embed=makeErrorMessage("No files found"))
         return
    
+    embed.set_footer(text=footer_msg)
     msg = await ctx.send(embed=embed)
 
     for i in range(len(files)):
