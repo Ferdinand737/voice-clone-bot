@@ -306,12 +306,14 @@ async def add(ctx):
         return
 
     for file in files:
-        if file.size >= 1000000:
+        if file.size >= 10000000:
             await ctx.send(embed=makeErrorMessage("Input file too large. All files must me under 10Mb"))
+            shutil.rmtree(path)
             return
 
         if file.content_type != 'audio/mpeg':
             await ctx.send(embed=makeErrorMessage("Input file must be an audio file"))
+            shutil.rmtree(path)
             return
 
 
