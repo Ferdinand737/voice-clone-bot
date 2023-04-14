@@ -134,7 +134,7 @@ async def help(ctx):
 
     helpList.append(getHelpEmbed('!speak','Bot joins voice channel and speaks prompt. Optional "gpt" argument.',"""!speak JordanPeterson | say exactly this\nor\n
                                                                                                                    !speak JordanPeterson gpt | tell me a story """))
-    helpList.append(getHelpEmbed('!add', 'Add a voice to your server by uploading file(s). Accent required.', """!add Jeff American"""))
+    helpList.append(getHelpEmbed('!add', 'Add a voice to your server by uploading file(s). Accent required. No spaces allowed', """!add Jeff American"""))
     helpList.append(getHelpEmbed('!list', 'View list of recent promts, click reactions to download.', "!list"))
     helpList.append(getHelpEmbed('!voices', 'View a list of voices available on your server.', '!voices'))
     helpList.append(getHelpEmbed('!delete', 'Delete a voice that you added to your server.',"!delete Jeff"))
@@ -203,6 +203,16 @@ async def speak(ctx):
     if days_difference > timedelta(days=30):
         db.resetMonthlyUserCharCount(user['user_id'])
 
+    if ctx.voice_client is not None:
+        await ctx.voice_client.disconnect()
+   
+    await ctx.send("Generating audio...")
+
+    try:
+        voice_client: VoiceClient = await channel.connect()
+    except:
+        return await ctx.send(embed=makeErrorMessage('Failed to connect to the voice channel. Please try again.'))
+
     if args['gpt']:
         try:
             openaiInput = args['prompt'] + " Do not cut off mid sentence"
@@ -229,14 +239,6 @@ async def speak(ctx):
     eLabs.textToSpeech(script, eLabsVoice['voice_id'], outputPath)
 
     db.updateUserCharCount(user['user_id'], len(script))
-
-    if ctx.voice_client is not None:
-        await ctx.voice_client.disconnect()
-   
-    try:
-        voice_client: VoiceClient = await channel.connect()
-    except asyncio.TimeoutError:
-        return await ctx.send(embed=makeErrorMessage('Failed to connect to the voice channel. Please try again.'))
 
     audio_source = discord.FFmpegPCMAudio(executable="ffmpeg", source=outputPath)
 
@@ -300,6 +302,8 @@ async def add(ctx):
         await ctx.send(embed=makeErrorMessage("You need to attach files to add a new voice."))
         return
 
+    await ctx.send("Adding voice...")
+
     if not os.path.exists(path):
         os.makedirs(path)
     else:
@@ -355,8 +359,8 @@ async def add(ctx):
         publicVoicesStr = 'None'
 
     embed = discord.Embed(title="Available Voices", color=0x0000ff)
-    embed.add_field(name="Public", value=publicVoicesStr)
-    embed.add_field(name="In " + str(serverName), value=thisServerVoicesStr)
+    embed.add_field(name="Public", value=publicVoicesStr, inline=False)
+    embed.add_field(name="In " + str(serverName), value=thisServerVoicesStr, inline=False)
     await ctx.send(embed=embed)
     
 
@@ -378,15 +382,20 @@ async def list(ctx):
         await ctx.send(embed=makeErrorMessage("No prompts found"))
         return
 
-    thisUserPromptsStr = ''
+   
     files = []
+    embed = discord.Embed(title=f"Your recent prompts in {serverName}.",description="React to download.", color=0x0000ff)
     for i, prompt in enumerate(thisUserPrompts):
-        thisUserPromptsStr = thisUserPromptsStr + f"{i+1}\u20e3  {prompt['command']} | {prompt['prompt'][:20]}...\n"
-        files.append(discord.File(prompt['path']))
-
-    thisUserPromptsStr = thisUserPromptsStr + "\nReact to download"
-
-    embed = discord.Embed(title=f"Your recent prompts in {serverName}", description=thisUserPromptsStr, color=0x0000ff)
+        try:
+            files.append(discord.File(prompt['path']))
+            embed.add_field(name=f"{i+1}\u20e3  {prompt['command']}",value=f">  {prompt['prompt'][:30]}...",inline=False)
+        except FileNotFoundError:
+            pass
+    
+    if len(files) == 0:
+        await ctx.send(embed=makeErrorMessage("No files found"))
+        return
+   
     msg = await ctx.send(embed=embed)
 
     for i in range(len(files)):
@@ -399,7 +408,7 @@ async def list(ctx):
     try:
         reaction, user = await bot.wait_for('reaction_add', timeout=60.0, check=check)
     except asyncio.TimeoutError:
-        await ctx.send("Timed out. Please try again.")
+        pass
     else:
         index = [f"{i+1}\u20e3" for i in range(len(files))].index(str(reaction.emoji)) 
         await ctx.send(file=files[index])
@@ -409,6 +418,7 @@ async def list(ctx):
 @bot.command(name='delete')
 async def delete(ctx):
     serverId = ctx.guild.id
+    serverName = ctx.guild.name
 
     user = checkUser(ctx.author)
 
@@ -423,11 +433,11 @@ async def delete(ctx):
         return
      
 
-    if user['privileges'] != 'admin':
+    if user['privileges'] == 'admin':
 
         if args['public']:
 
-            voiceToDelete = db.getPublicVoice(serverId, args['voice'])
+            voiceToDelete = db.getPublicVoice(args['voice'])
 
             if voiceToDelete is None:
                 await ctx.send(embed=makeErrorMessage("Could not find " + str(args['voice'])))
@@ -437,10 +447,8 @@ async def delete(ctx):
             voiceToDelete = db.getServerVoice(serverId, args['voice'])
 
             if voiceToDelete is None:
-                await ctx.send(embed=makeErrorMessage("Could not find " + str(args['voice'])))
+                await ctx.send(embed=makeErrorMessage("Could not find " + str(args['voice']) + " in " + str(serverName)))
                 return
-
-        return
 
     else:
 
@@ -483,10 +491,15 @@ async def usage(ctx):
 #new command !chat
 #just uses gpt4 (no voice cloning)
 
-# new command !donate
-# beg for money
-# donate to become member?
-# display my crypto wallet addresses
+@bot.command(name='donate')
+async def donate(ctx):
+    embed = discord.Embed(title='Donate',description='Please consider donating, API keys are not free.',color=0x0000ff)
+    embed.add_field(name='BTC',value='bc1qg944svjz7wydutldlzzfyxt04jaf5l3gvdquln', inline=False)
+    embed.add_field(name='ETH',value='0x4C5B8E063A2b23926B9621619e90B5560B0F8AFc', inline=False)
+    embed.add_field(name='XMR',value='48fMCSTJqZxFNY5RSwkfoa1GsffjxzZu6Wnk2x49VxKd3UGaaHWd86jTte6fWrtS7m2y6mTFKCCRMBxAVU51zNceAADkLpZ',inline=False)
+    embed.set_footer(text=footer_msg)
+    await ctx.send(embed=embed)
+
 
 db = DataBase()
 db.connect()
