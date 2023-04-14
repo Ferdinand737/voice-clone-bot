@@ -231,6 +231,7 @@ async def speak(ctx):
 
     if(len(script) + user['monthly_chars_used'] > user['monthly_char_limit']):
         await ctx.send(embed=makeErrorMessage("You have reached your monthly character limit of " + str(user['monthly_char_limit']) + ".\n Your Characters will be reset on " + nextCharReset.strftime('%b %-d, %Y')))
+        await voice_client.disconnect()
         return
 
     prompt = db.addPrompt(args, eLabsVoice['voice_id'], user['user_id'], serverId, script, len(script))
