@@ -32,9 +32,9 @@ def makeErrorMessage(reason):
 def getUsageEmbed(user, username):
     embed = discord.Embed(title=username + "'s usage", color=0x0000ff, description="First Prompt: " + str(user['date_time'].strftime('%b %-d, %Y')))
     embed.add_field(name='Privilages',value=str(user['privileges']))
-    embed.add_field(name="Total Chars Used", value=str(user['total_chars_used']))
-    embed.add_field(name="Monthly characters Used", value=str(user['monthly_chars_used']))
-    embed.add_field(name="Monthly Characters Limit", value=str(user['monthly_char_limit']))
+    embed.add_field(name="Total Characters Used", value=str(user['total_chars_used']))
+    embed.add_field(name="Monthly Characters Used", value=str(user['monthly_chars_used']))
+    embed.add_field(name="Monthly Character Limit", value=str(user['monthly_char_limit']))
     embed.add_field(name="Monthly Characters Remaining", value= str(user['monthly_char_limit'] - user['monthly_chars_used']))
     embed.add_field(name="Character Credit", value=user['char_credit'])
     embed.add_field(name="Next Character Reset", value=str(datetime.fromtimestamp(eLabs.getCharCountResetDate()).strftime('%b %-d, %Y')))
