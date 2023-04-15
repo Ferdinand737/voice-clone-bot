@@ -331,7 +331,7 @@ async def speak(ctx):
     else:
         db.updateUserMonthlyCharCount(user['user_id'], user['monthly_chars_used'] + len(script))
 
-    db.updateUserTotalCharCount(user['user_id'], user['total_char_count'] + len(script))
+    db.updateUserTotalCharCount(user['user_id'], user['total_chars_used'] + len(script))
     audio_source = discord.FFmpegPCMAudio(executable="ffmpeg", source=outputPath)
 
     if not voice_client.is_playing():
