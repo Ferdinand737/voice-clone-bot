@@ -21,8 +21,8 @@ class DataBase:
             row = cursor.fetchone()
             count = row[0]
         
-            if count != 3:
-                self.init()
+            # if count != 3:
+            #     self.init()
 
             return self.cnx
         except mysql.connector.Error as err:  
