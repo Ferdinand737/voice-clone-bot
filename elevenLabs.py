@@ -75,5 +75,13 @@ class ElevenLabs:
         response = requests.get(url, headers=headers)
         return json.loads(response.text)['next_character_count_reset_unix']
 
-    def deleteVoicesNotInDb(self, voicesInDb):
-        return
+    def deleteVoice(self, voiceId):
+        url = "https://api.elevenlabs.io/v1/voices/" + str(voiceId)
+
+        headers = {
+            "Accept": "application/json",
+            "xi-api-key": self.apikey
+        }
+
+        response = requests.delete(url, headers=headers)
+        return json.loads(response.text)
