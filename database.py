@@ -77,7 +77,7 @@ class DataBase:
 
 
     def addUser(self,user):
-        username = user.display_name + user.discriminator
+        username = user.name + user.discriminator
         user_id = user.id
         cursor = self.cnx.cursor()
         sql = "INSERT INTO users (user_id, username) VALUES (%s,%s)"
@@ -177,16 +177,26 @@ class DataBase:
         cursor.close()
         return
 
-
-    def updateUserCharCount(self,user_id, addedChars):
+    def updateUserMonthlyCharCount(self, user_id, newMonthlyCharCount):
         cursor = self.cnx.cursor()
-        sql = """
-        UPDATE users
-        SET monthly_chars_used = monthly_chars_used + %s,
-            total_chars_used = total_chars_used + %s
-        WHERE user_id = %s;
-        """
-        cursor.execute(sql, (addedChars, addedChars, user_id))
+        sql = "UPDATE users SET monthly_chars_used = %s WHERE user_id = %s;"  
+        cursor.execute(sql, (newMonthlyCharCount, user_id))
+        self.cnx.commit()
+        cursor.close()
+        return
+
+    def updateUserTotalCharCount(self, user_id, newTotalCharCount):
+        cursor = self.cnx.cursor()
+        sql = "UPDATE users SET total_chars_used = %s WHERE user_id = %s;"  
+        cursor.execute(sql, (newTotalCharCount, user_id))
+        self.cnx.commit()
+        cursor.close()
+        return
+
+    def updateUserCharCredit(self, user_id, newUserCredit):
+        cursor = self.cnx.cursor()
+        sql = "UPDATE users SET char_credit = %s WHERE user_id = %s;"  
+        cursor.execute(sql, (newUserCredit, user_id))
         self.cnx.commit()
         cursor.close()
         return
@@ -230,3 +240,4 @@ class DataBase:
         cursor.execute(sql,(voiceId,))
         self.cnx.commit()
         cursor.close()
+
