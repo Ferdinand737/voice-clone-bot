@@ -50,7 +50,7 @@ def getUsageEmbed(user):
     return embed
 
 def getAboutEmbed():
-    embed = discord.Embed(title="About Parrot",color=0x0000ff, description="I built this bot using the [ElevenLabs](https://beta.elevenlabs.io/) and [OpenAi](https://platform.openai.com/) APIs. Contact me <@273300302541881344> if you have any questions, suggestions or find any bugs.")
+    embed = discord.Embed(title="About Parrot",color=0x0000ff, description="[Add Parrot to your server](https://discord.com/api/oauth2/authorize?client_id=1095014597871804510&permissions=3196992&scope=bot)\n\nI built this bot using the [ElevenLabs](https://beta.elevenlabs.io/) and [OpenAi](https://platform.openai.com/) APIs. Contact me <@273300302541881344> if you have any questions, suggestions or find any bugs.")
     embed.add_field(name="Membership", value="Unfortunatly I cant give everyone membership because of the limits on my ElevenLabs account. If enough people donate, I can add more voices, increase character limits and add members. Contact me if you want to become a member.",inline=False)
     embed.add_field(name="Technologies Used", value="Implemented with python + discord library.\nMySql for data storage.\nHosted on my own server in the garage.\nIcon design by <@274019867764588544>.",inline=False)
     embed.set_footer(text=footer_msg)
