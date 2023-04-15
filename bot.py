@@ -30,6 +30,56 @@ def makeErrorMessage(reason):
     embed.set_footer(text=footer_msg)
     return embed
 
+def getDonateEmbed():
+    embed = discord.Embed(title='Donate',description='Please consider donating, API keys are not free.',color=0x0000ff)
+    embed.add_field(name='BTC',value='bc1qg944svjz7wydutldlzzfyxt04jaf5l3gvdquln', inline=False)
+    embed.add_field(name='ETH',value='0x4C5B8E063A2b23926B9621619e90B5560B0F8AFc', inline=False)
+    embed.add_field(name='XMR',value='48fMCSTJqZxFNY5RSwkfoa1GsffjxzZu6Wnk2x49VxKd3UGaaHWd86jTte6fWrtS7m2y6mTFKCCRMBxAVU51zNceAADkLpZ',inline=False)
+    embed.set_footer(text=footer_msg)
+    return embed
+
+def getUsageEmbed(user):
+    embed = discord.Embed(title=user['username'] + "'s usage", color=0x0000ff, description="First Prompt: " + str(user['date_time'].strftime('%b %-d, %Y')))
+    embed.add_field(name='Privilages',value=str(user['privileges']))
+    embed.add_field(name="Total Chars Used", value=str(user['total_chars_used']))
+    embed.add_field(name="Monthly Chars Used", value=str(user['monthly_chars_used']))
+    embed.add_field(name="Monthly Char Limit", value=str(user['monthly_char_limit']))
+    embed.add_field(name="Monthly Chars Remaining", value= str(user['monthly_char_limit'] - user['monthly_chars_used']))
+    embed.add_field(name="Next Char Reset", value=str(datetime.fromtimestamp(eLabs.getCharCountResetDate()).strftime('%b %-d, %Y')))
+    embed.set_footer(text=footer_msg)
+    return embed
+
+def getAboutEmbed():
+    embed = discord.Embed(title="About Parrot",color=0x0000ff, description="I built this bot using the [ElevenLabs](https://beta.elevenlabs.io/) and [OpenAi](https://platform.openai.com/) APIS. Contact me if you have any questions, suggestions or find any bugs.")
+    embed.add_field(name="Membership", value="Unfortunatly I cannot give everyone membership because of the limits on my ElevenLabs account. If enough people donate, I can add more voices, increase char limits and add members. Contact me if you want to become a member.",inline=False)
+    embed.add_field(name="Technologies Used", value="Implemented with python + discord library.\nMySql for data storage.\nHosted on my own server in the garage.",inline=False)
+    embed.set_footer(text=footer_msg)
+    return embed
+
+def getVoicesEmbed(serverId, serverName):
+    thisServerVoices = db.getServerVoices(serverId)
+    publicVoices = db.getPublicVoices()
+    thisServerVoicesStr =''
+    publicVoicesStr =''
+
+    if thisServerVoices is not None:
+        for voice in thisServerVoices:
+            thisServerVoicesStr = thisServerVoicesStr + voice['name'] + "\n"
+    else:
+        thisServerVoicesStr = 'None'
+
+    if publicVoices is not None:
+        for voice in publicVoices:
+            publicVoicesStr = publicVoicesStr + voice['name'] + "\n"
+    else:
+        publicVoicesStr = 'None'
+
+    embed = discord.Embed(title="Available Voices", color=0x0000ff)
+    embed.add_field(name="Public", value=publicVoicesStr, inline=False)
+    embed.add_field(name="In " + str(serverName), value=thisServerVoicesStr, inline=False)
+    embed.set_footer(text=footer_msg)
+    return embed
+
 def checkUser(user):
 
     discordAccountDate = user.created_at
@@ -119,6 +169,8 @@ def parseArgs(command):
 
 @bot.command(name='help')
 async def help(ctx):
+    serverId = ctx.guild.id
+    serverName = ctx.guild.name
 
     user = checkUser(ctx.author)
     if user is None:
@@ -126,7 +178,7 @@ async def help(ctx):
         return
 
 
-    commands = ['!speak','!add','!list','!voices','!delete','!usage']
+    commands = ['!speak','!add','!list','!voices','!delete','!usage','!donate','!about']
 
     def getHelpEmbed(title, description, example):
         toReturn = discord.Embed(title=title, color=0x0000ff, description=description)
@@ -135,13 +187,15 @@ async def help(ctx):
 
     helpList = []
 
-    helpList.append(getHelpEmbed('!speak','Bot joins voice channel and speaks prompt. Optional "gpt" argument.',"""!speak JordanPeterson | say exactly this\nor\n
+    helpList.append(getHelpEmbed('!speak',"Bot joins voice channel and speaks prompt. 'gpt' is optional","""!speak JordanPeterson | say exactly this\nor
                                                                                                                    !speak JordanPeterson gpt | tell me a story """))
     helpList.append(getHelpEmbed('!add', 'Add a voice to your server by uploading file(s). Accent required. No spaces allowed', """!add Jeff American"""))
     helpList.append(getHelpEmbed('!list', 'View list of recent promts, click reactions to download.', "!list"))
-    helpList.append(getHelpEmbed('!voices', 'View a list of voices available on your server.', '!voices'))
+    helpList.append(getVoicesEmbed(serverId, serverName))
     helpList.append(getHelpEmbed('!delete', 'Delete a voice that you added to your server.',"!delete Jeff"))
-    helpList.append(getHelpEmbed('!usage', 'View statistics about your usage.', '!usage'))
+    helpList.append(getUsageEmbed(user))
+    helpList.append(getDonateEmbed())
+    helpList.append(getAboutEmbed())
    
     embed = discord.Embed(title="Help",color=0x0000ff, description="Available Commands")
     for i, command in enumerate(commands):
@@ -345,28 +399,7 @@ async def add(ctx):
 async def add(ctx):
     serverId = ctx.guild.id
     serverName = ctx.guild.name
-    thisServerVoices = db.getServerVoices(serverId)
-    publicVoices = db.getPublicVoices()
-    thisServerVoicesStr =''
-    publicVoicesStr =''
-
-    if thisServerVoices is not None:
-        for voice in thisServerVoices:
-            thisServerVoicesStr = thisServerVoicesStr + voice['name'] + "\n"
-    else:
-        thisServerVoicesStr = 'None'
-
-    if publicVoices is not None:
-        for voice in publicVoices:
-            publicVoicesStr = publicVoicesStr + voice['name'] + "\n"
-    else:
-        publicVoicesStr = 'None'
-
-    embed = discord.Embed(title="Available Voices", color=0x0000ff)
-    embed.add_field(name="Public", value=publicVoicesStr, inline=False)
-    embed.add_field(name="In " + str(serverName), value=thisServerVoicesStr, inline=False)
-    embed.set_footer(text=footer_msg)
-    await ctx.send(embed=embed)
+    await ctx.send(embed=getVoicesEmbed(serverId, serverName))
     
 
 #clickable emoji to replay
@@ -482,16 +515,7 @@ async def usage(ctx):
     if user is None:
         await ctx.send(embed=makeErrorMessage("Your discord account is too new."))
         return
-    
-    embed = discord.Embed(title=user['username'] + "'s usage", color=0x0000ff, description="First Prompt: " + str(user['date_time'].strftime('%b %-d, %Y')))
-    embed.add_field(name='Privilages',value=str(user['privileges']))
-    embed.add_field(name="Total Chars Used", value=str(user['total_chars_used']))
-    embed.add_field(name="Monthly Chars Used", value=str(user['monthly_chars_used']))
-    embed.add_field(name="Monthly Char Limit", value=str(user['monthly_char_limit']))
-    embed.add_field(name="Monthly Chars Remaining", value= str(user['monthly_char_limit'] - user['monthly_chars_used']))
-    embed.add_field(name="Next Char Reset", value=str(datetime.fromtimestamp(eLabs.getCharCountResetDate()).strftime('%b %-d, %Y')))
-    embed.set_footer(text=footer_msg)
-    await ctx.send(embed=embed)
+    await ctx.send(embed=getUsageEmbed(user))
 
 
 #new command !chat
@@ -499,13 +523,11 @@ async def usage(ctx):
 
 @bot.command(name='donate')
 async def donate(ctx):
-    embed = discord.Embed(title='Donate',description='Please consider donating, API keys are not free.',color=0x0000ff)
-    embed.add_field(name='BTC',value='bc1qg944svjz7wydutldlzzfyxt04jaf5l3gvdquln', inline=False)
-    embed.add_field(name='ETH',value='0x4C5B8E063A2b23926B9621619e90B5560B0F8AFc', inline=False)
-    embed.add_field(name='XMR',value='48fMCSTJqZxFNY5RSwkfoa1GsffjxzZu6Wnk2x49VxKd3UGaaHWd86jTte6fWrtS7m2y6mTFKCCRMBxAVU51zNceAADkLpZ',inline=False)
-    embed.set_footer(text=footer_msg)
-    await ctx.send(embed=embed)
+    await ctx.send(embed=getDonateEmbed())
 
+@bot.command(name='about')
+async def donate(ctx):
+    await ctx.send(embed=getAboutEmbed())
 
 db = DataBase()
 db.connect()
