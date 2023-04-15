@@ -148,15 +148,15 @@ class DataBase:
         command = '!chat' if voiceId == None else '!speak'
         command = command + " " + str(args['voice']) + " " + gpt
         cursor = self.cnx.cursor()
+
         sql = "INSERT INTO prompts (command, voice_id, user_id, server_id, prompt, response, num_chars) VALUES (%s,%s,%s,%s,%s,%s,%s);"
         cursor.execute(sql, (command, voiceId, userId, serverId, prompt, response, numChars))
-        self.cnx.commit()
+      
         command = command.replace(" ", "_")
-        cursor = self.cnx.cursor()
+      
         sql = "UPDATE prompts SET path = CONCAT('audioOutput/', %s, '/', LAST_INSERT_ID(),'_',%s,'.mp3') WHERE prompt_id = LAST_INSERT_ID();"
         cursor.execute(sql, (userId, command))
-        self.cnx.commit()
-
+     
         cursor.execute("SELECT LAST_INSERT_ID();")
         promptId = cursor.fetchone()[0]
         self.cnx.commit()
