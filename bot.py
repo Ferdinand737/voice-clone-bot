@@ -43,7 +43,7 @@ def getUsageEmbed(user, username):
 
 def getAboutEmbed():
     embed = discord.Embed(title="About Parrot",color=0x0000ff, description="[Add Parrot to your server](https://discord.com/api/oauth2/authorize?client_id=1095014597871804510&permissions=3196992&scope=bot)\n\nI built this bot using the [ElevenLabs](https://beta.elevenlabs.io/) and [OpenAi](https://platform.openai.com/) APIs. Contact me <@273300302541881344> if you have any questions, suggestions or find any bugs.")
-    embed.add_field(name="Membership", value="Unfortunatly I cant give everyone membership because of the limits on my ElevenLabs account. If enough people pay, I can add more voices, increase character limits and add members. Contact me if you want to become a member.",inline=False)
+    embed.add_field(name="Membership", value="Unfortunatly I cant give everyone membership because of the limits on my ElevenLabs account. If enough people buy characters, I can add more voices, increase character limits and add members. Contact me if you want to become a member.",inline=False)
     embed.add_field(name="Technologies Used", value="Implemented with python + discord library.\nMySql for data storage.\nHosted on my own server in the garage.\nIcon design by <@274019867764588544>.",inline=False)
     embed.set_footer(text=footer_msg)
     return embed
@@ -176,6 +176,7 @@ def parseArgs(command):
 
 @bot.command(name='help')
 async def help(ctx):
+    db.connect()
     serverId = ctx.guild.id
     serverName = ctx.guild.name
 
@@ -233,6 +234,7 @@ async def help(ctx):
 #add clickable emoji for replay?
 @bot.command(name='speak')
 async def speak(ctx):
+    db.connect()
 
     args = parseArgs(ctx.message.content)
 
@@ -346,6 +348,7 @@ async def speak(ctx):
 #members can have 2 custom voices
 @bot.command(name='add')
 async def add(ctx):
+    db.connect()
     args = parseArgs(ctx.message.content)
     user = checkUser(ctx.author)
     serverId = ctx.guild.id
@@ -439,6 +442,7 @@ async def add(ctx):
 #clickable emoji to replay
 @bot.command(name='list')
 async def list(ctx):
+    db.connect()
     serverId = ctx.guild.id
     serverName = ctx.guild.name
 
@@ -490,6 +494,7 @@ async def list(ctx):
 
 @bot.command(name='delete')
 async def delete(ctx):
+    db.connect()
     serverId = ctx.guild.id
     serverName = ctx.guild.name
 
@@ -544,6 +549,7 @@ async def delete(ctx):
 
 @bot.command(name='usage')
 async def usage(ctx):
+    db.connect()
     user = checkUser(ctx.author)
     if user is None:
         await ctx.send(embed=makeErrorMessage("Your discord account is too new."))
@@ -553,13 +559,14 @@ async def usage(ctx):
 
 @bot.command(name='about')
 async def about(ctx):
+    db.connect()
     await ctx.send(embed=getAboutEmbed())
 
 @bot.command(name='buy')
 async def buy(ctx):
+    db.connect()
     await ctx.send(embed=getBuyEmbed())
 
 
 db = DataBase()
-db.connect()
 bot.run(TOKEN)
