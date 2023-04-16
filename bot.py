@@ -29,6 +29,7 @@ def makeErrorMessage(reason):
     embed.set_footer(text=footer_msg)
     return embed
 
+
 def getUsageEmbed(user, username):
     embed = discord.Embed(title=username + "'s usage", color=0x0000ff, description="First Prompt: " + str(user['date_time'].strftime('%b %-d, %Y')))
     embed.add_field(name='Privilages',value=str(user['privileges']))
@@ -41,12 +42,14 @@ def getUsageEmbed(user, username):
     embed.set_footer(text=footer_msg)
     return embed
 
+
 def getAboutEmbed():
     embed = discord.Embed(title="About Parrot",color=0x0000ff, description="[Add Parrot to your server](https://discord.com/api/oauth2/authorize?client_id=1095014597871804510&permissions=3196992&scope=bot)\n\nI built this bot using the [ElevenLabs](https://beta.elevenlabs.io/) and [OpenAi](https://platform.openai.com/) APIs. Contact me <@273300302541881344> if you have any questions, suggestions or find any bugs.")
     embed.add_field(name="Membership", value="Unfortunatly I cant give everyone membership because of the limits on my ElevenLabs account. If enough people buy characters, I can add more voices, increase character limits and add members. Contact me if you want to become a member.",inline=False)
     embed.add_field(name="Technologies Used", value="Implemented with python + discord library.\nMySql for data storage.\nHosted on my own server in the garage.\nIcon design by <@274019867764588544>.",inline=False)
     embed.set_footer(text=footer_msg)
     return embed
+
 
 def getVoicesEmbed(serverId, serverName):
     thisServerVoices = db.getServerVoices(serverId)
@@ -72,6 +75,7 @@ def getVoicesEmbed(serverId, serverName):
     embed.set_footer(text=footer_msg)
     return embed
 
+
 def getBuyEmbed():
     embed = discord.Embed(title="Buy More Characters",color=0x0000ff,description='Please have patience, I may not be able to credit your account immediately.')
     embed.add_field(name='Buy 10,000 Characters', value='$6.00 CAD')
@@ -86,6 +90,7 @@ def getBuyEmbed():
                                             XMR:   48fMCSTJqZxFNY5RSwkfoa1GsffjxzZu6Wnk2x49VxKd3UGaaHWd86jTte6fWrtS7m2y6mTFKCCRMBxAVU51zNceAADkLpZ""",inline=False)
     embed.set_footer(text=footer_msg)
     return embed
+
 
 def checkUser(user):
 
@@ -104,6 +109,7 @@ def checkUser(user):
         foundUser = db.addUser(user)
 
     return foundUser
+
 
 def parseArgs(command):
 
@@ -174,6 +180,7 @@ def parseArgs(command):
 
     return outDict
 
+
 @bot.command(name='help')
 async def help(ctx):
     db.connect()
@@ -186,7 +193,7 @@ async def help(ctx):
         return
 
 
-    commands = ['!speak','!add','!list','!voices','!delete','!usage','!buy','!about']
+    commands = ['!speak','!add','!download','!replay','!voices','!delete','!usage','!buy','!about']
 
     def getHelpEmbed(title, description, example):
         toReturn = discord.Embed(title=title, color=0x0000ff, description=description)
@@ -198,7 +205,8 @@ async def help(ctx):
     helpList.append(getHelpEmbed('!speak',"Bot joins voice channel and speaks prompt. 'gpt' is optional","""!speak JordanPeterson | say exactly this\nor
                                                                                                                    !speak JordanPeterson gpt | tell me a story """))
     helpList.append(getHelpEmbed('!add', 'Add a voice to your server by uploading file(s). Accent required. No spaces allowed', """!add Jeff American"""))
-    helpList.append(getHelpEmbed('!list', 'View list of recent promts, click reactions to download.', "!list"))
+    helpList.append(getHelpEmbed('!download', 'View list of recent promts, click reactions to download.', "!download"))
+    helpList.append(getHelpEmbed('!replay', 'View list of recent promts, click reactions to replay.', "!replay"))
     helpList.append(getVoicesEmbed(serverId, serverName))
     helpList.append(getHelpEmbed('!delete', 'Delete a voice that you added to your server.',"!delete Jeff"))
     helpList.append(getUsageEmbed(user,ctx.author.display_name))
@@ -345,7 +353,8 @@ async def speak(ctx):
     else:
         await ctx.send(embed=makeErrorMessage('I am already playing an audio file. Please wait until I finish.'))
     
-#members can have 2 custom voices
+
+
 @bot.command(name='add')
 async def add(ctx):
     db.connect()
@@ -439,9 +448,8 @@ async def add(ctx):
     await ctx.send(embed=getVoicesEmbed(serverId, serverName))
     
 
-#clickable emoji to replay
-@bot.command(name='list')
-async def list(ctx):
+@bot.command(name='download')
+async def download(ctx):
     db.connect()
     serverId = ctx.guild.id
     serverName = ctx.guild.name
@@ -491,6 +499,79 @@ async def list(ctx):
         await ctx.send(file=files[index])
         await ctx.send("File sent.")
 
+
+@bot.command(name='replay')
+async def replay(ctx):
+    db.connect()
+    serverId = ctx.guild.id
+    serverName = ctx.guild.name
+
+    user = checkUser(ctx.author)
+
+    if user is None:
+        await ctx.send(embed=makeErrorMessage("Your discord account is too new"))
+        return
+
+    thisUserPrompts = db.getUserPrompts(user['user_id'], serverId, 5)
+
+    if thisUserPrompts is None:
+        await ctx.send(embed=makeErrorMessage("No prompts found"))
+        return
+
+    prompts = []
+    embed = discord.Embed(title=f"Your recent prompts in {serverName}.",description="React to replay.", color=0x0000ff)
+    for i, prompt in enumerate(thisUserPrompts):
+        try:
+            prompts.append(prompt['path'])
+            embed.add_field(name=f"{i+1}\u20e3  {prompt['command']}",value=f">  {prompt['prompt'][:30]}...",inline=False)
+        except FileNotFoundError:
+            pass
+    
+    if len(prompts) == 0:
+        await ctx.send(embed=makeErrorMessage("No prompts found"))
+        return
+   
+    embed.set_footer(text=footer_msg)
+    msg = await ctx.send(embed=embed)
+
+    for i in range(len(prompts)):
+        await msg.add_reaction(f"{i+1}\u20e3")
+
+   
+    def check(reaction, user):
+        return user == ctx.author and str(reaction.emoji) in [f"{i+1}\u20e3" for i in range(len(prompts))]
+
+    try:
+        reaction, user = await bot.wait_for('reaction_add', timeout=60.0, check=check)
+    except asyncio.TimeoutError:
+        pass
+    else:
+        index = [f"{i+1}\u20e3" for i in range(len(prompts))].index(str(reaction.emoji)) 
+
+        voice = ctx.author.voice
+
+        if voice is None:
+            await ctx.send(embed=makeErrorMessage('You need to be in a voice channel to use this command.'))
+            return
+
+        channel = voice.channel
+
+        try:
+            voice_client: VoiceClient = await channel.connect()
+        except:
+            return await ctx.send(embed=makeErrorMessage('Failed to connect to the voice channel. Please try again.'))
+
+        audio_source = discord.FFmpegPCMAudio(executable="ffmpeg", source=prompts[index])
+
+        if not voice_client.is_playing():
+            voice_client.play(audio_source, after=lambda e: print('Finished playing', e))
+
+            while voice_client.is_playing():
+                await asyncio.sleep(1)
+            await voice_client.disconnect()
+        else:
+            await ctx.send(embed=makeErrorMessage('I am already playing an audio file. Please wait until I finish.'))
+        
 
 @bot.command(name='delete')
 async def delete(ctx):
@@ -547,6 +628,7 @@ async def delete(ctx):
     embed.set_footer(text=footer_msg)
     await ctx.send(embed=embed)
 
+
 @bot.command(name='usage')
 async def usage(ctx):
     db.connect()
@@ -561,6 +643,7 @@ async def usage(ctx):
 async def about(ctx):
     db.connect()
     await ctx.send(embed=getAboutEmbed())
+
 
 @bot.command(name='buy')
 async def buy(ctx):
