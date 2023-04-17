@@ -311,7 +311,7 @@ async def speak(ctx):
        
         await voice_client.disconnect()
         embed = discord.Embed(title="Error", color=0xff0000)
-        embed.add_field(name="Reason", value="You have used all of your characters.\n" + str(user['monthly_char_limit']) + " characters will be added on " + nextCharReset.strftime('%b %-d, %Y') + ".\n\nWait or click \U0001F4B0 to buy more characters.")
+        embed.add_field(name="Reason", value="This response would exceed your available characters\n" + str(user['monthly_char_limit']) + " characters will be added on " + nextCharReset.strftime('%b %-d, %Y') + ".\n\nWait or click \U0001F4B0 to buy more characters.")
         embed.set_footer(text=footer_msg)
 
         msg = await ctx.send(embed=embed)
