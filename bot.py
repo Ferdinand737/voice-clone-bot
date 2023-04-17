@@ -23,38 +23,33 @@ eLabs = ElevenLabs(os.getenv('ELEVENLABS_TOKEN'))
 openai.api_key = os.getenv('OPENAI_TOKEN')
 
 
-
 def makeErrorMessage(reason):
     embed = discord.Embed(title="Error",color=0xff0000)
     embed.add_field(name="Reason",value=reason)
     embed.set_footer(text=footer_msg)
     return embed
 
-def getDonateEmbed():
-    embed = discord.Embed(title='Donate',description='Please consider donating, API keys are not free.',color=0x0000ff)
-    embed.add_field(name='BTC',value='bc1qg944svjz7wydutldlzzfyxt04jaf5l3gvdquln', inline=False)
-    embed.add_field(name='ETH',value='0x4C5B8E063A2b23926B9621619e90B5560B0F8AFc', inline=False)
-    embed.add_field(name='XMR',value='48fMCSTJqZxFNY5RSwkfoa1GsffjxzZu6Wnk2x49VxKd3UGaaHWd86jTte6fWrtS7m2y6mTFKCCRMBxAVU51zNceAADkLpZ',inline=False)
+
+def getUsageEmbed(user, username):
+    embed = discord.Embed(title=username + "'s usage", color=0x0000ff, description="First Prompt: " + str(user['date_time'].strftime('%b %-d, %Y')))
+    embed.add_field(name='Privilages',value=str(user['privileges']))
+    embed.add_field(name="Total Characters Used", value=str(user['total_chars_used']))
+    embed.add_field(name="Monthly Characters Used", value=str(user['monthly_chars_used']))
+    embed.add_field(name="Monthly Character Limit", value=str(user['monthly_char_limit']))
+    embed.add_field(name="Monthly Characters Remaining", value= str(user['monthly_char_limit'] - user['monthly_chars_used']))
+    embed.add_field(name="Character Credit", value=user['char_credit'])
+    embed.add_field(name="Next Character Reset", value=str(datetime.fromtimestamp(eLabs.getCharCountResetDate()).strftime('%b %-d, %Y')))
     embed.set_footer(text=footer_msg)
     return embed
 
-def getUsageEmbed(user):
-    embed = discord.Embed(title=user['username'] + "'s usage", color=0x0000ff, description="First Prompt: " + str(user['date_time'].strftime('%b %-d, %Y')))
-    embed.add_field(name='Privilages',value=str(user['privileges']))
-    embed.add_field(name="Total Chars Used", value=str(user['total_chars_used']))
-    embed.add_field(name="Monthly Chars Used", value=str(user['monthly_chars_used']))
-    embed.add_field(name="Monthly Char Limit", value=str(user['monthly_char_limit']))
-    embed.add_field(name="Monthly Chars Remaining", value= str(user['monthly_char_limit'] - user['monthly_chars_used']))
-    embed.add_field(name="Next Char Reset", value=str(datetime.fromtimestamp(eLabs.getCharCountResetDate()).strftime('%b %-d, %Y')))
-    embed.set_footer(text=footer_msg)
-    return embed
 
 def getAboutEmbed():
     embed = discord.Embed(title="About Parrot",color=0x0000ff, description="[Add Parrot to your server](https://discord.com/api/oauth2/authorize?client_id=1095014597871804510&permissions=3196992&scope=bot)\n\nI built this bot using the [ElevenLabs](https://beta.elevenlabs.io/) and [OpenAi](https://platform.openai.com/) APIs. Contact me <@273300302541881344> if you have any questions, suggestions or find any bugs.")
-    embed.add_field(name="Membership", value="Unfortunatly I cant give everyone membership because of the limits on my ElevenLabs account. If enough people donate, I can add more voices, increase character limits and add members. Contact me if you want to become a member.",inline=False)
+    embed.add_field(name="Membership", value="Unfortunatly I cant give everyone membership because of the limits on my ElevenLabs account. If enough people buy characters, I can add more voices, increase character limits and add members. Contact me if you want to become a member.",inline=False)
     embed.add_field(name="Technologies Used", value="Implemented with python + discord library.\nMySql for data storage.\nHosted on my own server in the garage.\nIcon design by <@274019867764588544>.",inline=False)
     embed.set_footer(text=footer_msg)
     return embed
+
 
 def getVoicesEmbed(serverId, serverName):
     thisServerVoices = db.getServerVoices(serverId)
@@ -80,6 +75,23 @@ def getVoicesEmbed(serverId, serverName):
     embed.set_footer(text=footer_msg)
     return embed
 
+
+def getBuyEmbed():
+    embed = discord.Embed(title="Buy More Characters",color=0x0000ff,description='Please have patience, I may not be able to credit your account immediately.')
+    embed.add_field(name='Buy 10,000 Characters', value='$6.00 CAD')
+    embed.add_field(name='Buy 20,000 Characters', value='$10.00 CAD')
+
+    embed.add_field(name='e-Transfer',value='9112274@gmail.com\nSend discord User ID in the message eg: 273300302541881344.',inline=False)
+    embed.add_field(name='Pay pal', value='9112274@gmail.com\nSend discord User ID in the message eg: 273300302541881344.',inline=False)
+
+    embed.add_field(name='Crypto',value="""Send me <@273300302541881344> a message from the account you want credited with the blockchain transaction ID.\n
+                                            BTC:   bc1qg944svjz7wydutldlzzfyxt04jaf5l3gvdquln\n
+                                            ETH:   0x4C5B8E063A2b23926B9621619e90B5560B0F8AFc\n
+                                            XMR:   48fMCSTJqZxFNY5RSwkfoa1GsffjxzZu6Wnk2x49VxKd3UGaaHWd86jTte6fWrtS7m2y6mTFKCCRMBxAVU51zNceAADkLpZ""",inline=False)
+    embed.set_footer(text=footer_msg)
+    return embed
+
+
 def checkUser(user):
 
     discordAccountDate = user.created_at
@@ -97,6 +109,7 @@ def checkUser(user):
         foundUser = db.addUser(user)
 
     return foundUser
+
 
 def parseArgs(command):
 
@@ -167,8 +180,10 @@ def parseArgs(command):
 
     return outDict
 
+
 @bot.command(name='help')
 async def help(ctx):
+    db.connect()
     serverId = ctx.guild.id
     serverName = ctx.guild.name
 
@@ -178,7 +193,7 @@ async def help(ctx):
         return
 
 
-    commands = ['!speak','!add','!list','!voices','!delete','!usage','!donate','!about']
+    commands = ['!speak','!add','!download','!replay','!voices','!delete','!usage','!buy','!about']
 
     def getHelpEmbed(title, description, example):
         toReturn = discord.Embed(title=title, color=0x0000ff, description=description)
@@ -190,11 +205,12 @@ async def help(ctx):
     helpList.append(getHelpEmbed('!speak',"Bot joins voice channel and speaks prompt. 'gpt' is optional","""!speak JordanPeterson | say exactly this\nor
                                                                                                                    !speak JordanPeterson gpt | tell me a story """))
     helpList.append(getHelpEmbed('!add', 'Add a voice to your server by uploading file(s). Accent required. No spaces allowed', """!add Jeff American"""))
-    helpList.append(getHelpEmbed('!list', 'View list of recent promts, click reactions to download.', "!list"))
+    helpList.append(getHelpEmbed('!download', 'View list of recent promts, click reactions to download.', "!download"))
+    helpList.append(getHelpEmbed('!replay', 'View list of recent promts, click reactions to replay.', "!replay"))
     helpList.append(getVoicesEmbed(serverId, serverName))
     helpList.append(getHelpEmbed('!delete', 'Delete a voice that you added to your server.',"!delete Jeff"))
-    helpList.append(getUsageEmbed(user))
-    helpList.append(getDonateEmbed())
+    helpList.append(getUsageEmbed(user,ctx.author.display_name))
+    helpList.append(getBuyEmbed())
     helpList.append(getAboutEmbed())
    
     embed = discord.Embed(title="Help",color=0x0000ff, description="Available Commands")
@@ -226,6 +242,7 @@ async def help(ctx):
 #add clickable emoji for replay?
 @bot.command(name='speak')
 async def speak(ctx):
+    db.connect()
 
     args = parseArgs(ctx.message.content)
 
@@ -286,18 +303,45 @@ async def speak(ctx):
     else:
         script = args['prompt']
 
-    if(len(script) + user['monthly_chars_used'] > user['monthly_char_limit']):
-        await ctx.send(embed=makeErrorMessage("You have reached your monthly character limit of " + str(user['monthly_char_limit']) + ".\n Your Characters will be reset on " + nextCharReset.strftime('%b %-d, %Y')))
-        await voice_client.disconnect()
-        return
+    availableMonthlyChars = user['monthly_char_limit'] - user['monthly_chars_used']
+    availableCharCredit = user['char_credit']
+    availableCharTotal = availableMonthlyChars + availableCharCredit
 
+    if len(script) > availableCharTotal:
+       
+        await voice_client.disconnect()
+        embed = discord.Embed(title="Error", color=0xff0000)
+        embed.add_field(name="Reason", value="This response would exceed your available characters\n" + str(user['monthly_char_limit']) + " characters will be added on " + nextCharReset.strftime('%b %-d, %Y') + ".\n\nWait or click \U0001F4B0 to buy more characters.")
+        embed.set_footer(text=footer_msg)
+
+        msg = await ctx.send(embed=embed)
+
+        money_bag_emoji = "\U0001F4B0"
+        await msg.add_reaction(money_bag_emoji)
+
+        def check(reaction, user):
+            return user == ctx.author and str(reaction.emoji) == money_bag_emoji
+        try:
+            reaction, user = await bot.wait_for('reaction_add', timeout=60.0, check=check)
+        except asyncio.TimeoutError:
+            pass
+        else:
+            await ctx.send(embed=getBuyEmbed())
+        return
+  
     prompt = db.addPrompt(args, eLabsVoice['voice_id'], user['user_id'], serverId, script, len(script))
            
     outputPath = prompt['path']
     eLabs.textToSpeech(script, eLabsVoice['voice_id'], outputPath)
 
-    db.updateUserCharCount(user['user_id'], len(script))
+    if len(script) > availableMonthlyChars:
+        db.updateUserMonthlyCharCount(user['user_id'], 0)
+        remainingChars = len(script) - availableMonthlyChars
+        db.updateUserCreditCount(user['user_id'],availableCharCredit-remainingChars)
+    else:
+        db.updateUserMonthlyCharCount(user['user_id'], user['monthly_chars_used'] + len(script))
 
+    db.updateUserTotalCharCount(user['user_id'], user['total_chars_used'] + len(script))
     audio_source = discord.FFmpegPCMAudio(executable="ffmpeg", source=outputPath)
 
     if not voice_client.is_playing():
@@ -309,9 +353,11 @@ async def speak(ctx):
     else:
         await ctx.send(embed=makeErrorMessage('I am already playing an audio file. Please wait until I finish.'))
     
-    
+
+
 @bot.command(name='add')
 async def add(ctx):
+    db.connect()
     args = parseArgs(ctx.message.content)
     user = checkUser(ctx.author)
     serverId = ctx.guild.id
@@ -402,9 +448,9 @@ async def add(ctx):
     await ctx.send(embed=getVoicesEmbed(serverId, serverName))
     
 
-#clickable emoji to replay
-@bot.command(name='list')
-async def list(ctx):
+@bot.command(name='download')
+async def download(ctx):
+    db.connect()
     serverId = ctx.guild.id
     serverName = ctx.guild.name
 
@@ -454,8 +500,82 @@ async def list(ctx):
         await ctx.send("File sent.")
 
 
+@bot.command(name='replay')
+async def replay(ctx):
+    db.connect()
+    serverId = ctx.guild.id
+    serverName = ctx.guild.name
+
+    user = checkUser(ctx.author)
+
+    if user is None:
+        await ctx.send(embed=makeErrorMessage("Your discord account is too new"))
+        return
+
+    thisUserPrompts = db.getUserPrompts(user['user_id'], serverId, 5)
+
+    if thisUserPrompts is None:
+        await ctx.send(embed=makeErrorMessage("No prompts found"))
+        return
+
+    prompts = []
+    embed = discord.Embed(title=f"Your recent prompts in {serverName}.",description="React to replay.", color=0x0000ff)
+    for i, prompt in enumerate(thisUserPrompts):
+        try:
+            prompts.append(prompt['path'])
+            embed.add_field(name=f"{i+1}\u20e3  {prompt['command']}",value=f">  {prompt['prompt'][:30]}...",inline=False)
+        except FileNotFoundError:
+            pass
+    
+    if len(prompts) == 0:
+        await ctx.send(embed=makeErrorMessage("No prompts found"))
+        return
+   
+    embed.set_footer(text=footer_msg)
+    msg = await ctx.send(embed=embed)
+
+    for i in range(len(prompts)):
+        await msg.add_reaction(f"{i+1}\u20e3")
+
+   
+    def check(reaction, user):
+        return user == ctx.author and str(reaction.emoji) in [f"{i+1}\u20e3" for i in range(len(prompts))]
+
+    try:
+        reaction, user = await bot.wait_for('reaction_add', timeout=60.0, check=check)
+    except asyncio.TimeoutError:
+        pass
+    else:
+        index = [f"{i+1}\u20e3" for i in range(len(prompts))].index(str(reaction.emoji)) 
+
+        voice = ctx.author.voice
+
+        if voice is None:
+            await ctx.send(embed=makeErrorMessage('You need to be in a voice channel to use this command.'))
+            return
+
+        channel = voice.channel
+
+        try:
+            voice_client: VoiceClient = await channel.connect()
+        except:
+            return await ctx.send(embed=makeErrorMessage('Failed to connect to the voice channel. Please try again.'))
+
+        audio_source = discord.FFmpegPCMAudio(executable="ffmpeg", source=prompts[index])
+
+        if not voice_client.is_playing():
+            voice_client.play(audio_source, after=lambda e: print('Finished playing', e))
+
+            while voice_client.is_playing():
+                await asyncio.sleep(1)
+            await voice_client.disconnect()
+        else:
+            await ctx.send(embed=makeErrorMessage('I am already playing an audio file. Please wait until I finish.'))
+        
+
 @bot.command(name='delete')
 async def delete(ctx):
+    db.connect()
     serverId = ctx.guild.id
     serverName = ctx.guild.name
 
@@ -511,24 +631,25 @@ async def delete(ctx):
 
 @bot.command(name='usage')
 async def usage(ctx):
+    db.connect()
     user = checkUser(ctx.author)
     if user is None:
         await ctx.send(embed=makeErrorMessage("Your discord account is too new."))
         return
-    await ctx.send(embed=getUsageEmbed(user))
+    await ctx.send(embed=getUsageEmbed(user,ctx.author.display_name))
 
-
-#new command !chat
-#just uses gpt4 (no voice cloning)
-
-@bot.command(name='donate')
-async def donate(ctx):
-    await ctx.send(embed=getDonateEmbed())
 
 @bot.command(name='about')
-async def donate(ctx):
+async def about(ctx):
+    db.connect()
     await ctx.send(embed=getAboutEmbed())
 
+
+@bot.command(name='buy')
+async def buy(ctx):
+    db.connect()
+    await ctx.send(embed=getBuyEmbed())
+
+
 db = DataBase()
-db.connect()
 bot.run(TOKEN)
