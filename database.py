@@ -193,7 +193,7 @@ class DataBase:
         cursor.close()
         return
 
-    def updateUserCharCredit(self, user_id, newUserCredit):
+    def updateUserCreditCount(self, user_id, newUserCredit):
         cursor = self.cnx.cursor()
         sql = "UPDATE users SET char_credit = %s WHERE user_id = %s;"  
         cursor.execute(sql, (newUserCredit, user_id))

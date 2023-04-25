@@ -335,7 +335,7 @@ async def speak(ctx):
     eLabs.textToSpeech(script, eLabsVoice['voice_id'], outputPath)
 
     if len(script) > availableMonthlyChars:
-        db.updateUserMonthlyCharCount(user['user_id'], 0)
+        db.updateUserMonthlyCharCount(user['user_id'], user['monthly_char_limit'])
         remainingChars = len(script) - availableMonthlyChars
         db.updateUserCreditCount(user['user_id'],availableCharCredit-remainingChars)
     else:
