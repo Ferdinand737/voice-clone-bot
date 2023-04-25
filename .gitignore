@@ -1,4 +1,5 @@
 .env
+.serverenv
 __pycache__/
 audioOutput/
 voices/
