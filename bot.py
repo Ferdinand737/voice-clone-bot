@@ -443,6 +443,7 @@ async def add(ctx):
 
 @bot.command(name='voices')
 async def add(ctx):
+    db.connect()
     serverId = ctx.guild.id
     serverName = ctx.guild.name
     await ctx.send(embed=getVoicesEmbed(serverId, serverName))
