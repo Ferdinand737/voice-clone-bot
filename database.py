@@ -223,10 +223,10 @@ class DataBase:
             return None
         return result
 
-    def getUserPrompts(self, userId, serverId, limit):
+    def getUserPrompts(self, userId, limit):
         cursor = self.cnx.cursor()
-        sql = "SELECT * FROM prompts WHERE user_id=%s AND server_id=%s ORDER BY date_time DESC LIMIT %s"
-        cursor.execute(sql,(userId,serverId,limit))
+        sql = "SELECT * FROM prompts WHERE user_id=%s ORDER BY date_time DESC LIMIT %s"
+        cursor.execute(sql,(userId,limit))
         result = self.cursorToDict(cursor)
         self.cnx.commit()
         cursor.close()

@@ -1,5 +1,31 @@
 #https://discord.com/api/oauth2/authorize?client_id=1095014597871804510&permissions=3196992&scope=bot
 #https://discord.com/api/oauth2/authorize?client_id=1095890592753528872&permissions=3196928&scope=bot Dev
+#TODO:
+    #Edit !help to only show permissioned commands
+
+
+    #Change !replay and !download 
+        #include prompts from all servers
+        #show longer history
+
+    #Add functionality to download/replay anything
+        #!replay/download Joe
+            #list replays/files where voice name contains 'joe'
+                #check if file is available
+                    #download if necessary
+
+    #Add recovery whenever bot is launched
+        #backupDatabase
+            #mysqldump
+        #ElevenLabsVoices == DatabaseVoices == voices
+        #ElevenLabsPrompts == DataBasePrompts == audioOutput
+        #if mismatch:
+            #upload, download, edit db
+
+    #Delete old audioOutput files
+        #iterate through all audioOutputs
+            #delete anything older than a week
+
 
 import os
 import discord
@@ -461,7 +487,7 @@ async def download(ctx):
         await ctx.send(embed=makeErrorMessage("Your discord account is too new"))
         return
 
-    thisUserPrompts = db.getUserPrompts(user['user_id'], serverId, 5)
+    thisUserPrompts = db.getUserPrompts(user['user_id'],8)
 
     if thisUserPrompts is None:
         await ctx.send(embed=makeErrorMessage("No prompts found"))
@@ -469,11 +495,11 @@ async def download(ctx):
 
    
     files = []
-    embed = discord.Embed(title=f"Your recent prompts in {serverName}.",description="React to download.", color=0x0000ff)
+    embed = discord.Embed(title=f"Your recent prompts",description="React to download.", color=0x0000ff)
     for i, prompt in enumerate(thisUserPrompts):
         try:
             files.append(discord.File(prompt['path']))
-            embed.add_field(name=f"{i+1}\u20e3  {prompt['command']}",value=f">  {prompt['prompt'][:30]}...",inline=False)
+            embed.add_field(name=f"{i+1}\u20e3  {prompt['command']}",value=f">  {prompt['prompt'][:40]}...",inline=False)
         except FileNotFoundError:
             pass
     
@@ -513,18 +539,18 @@ async def replay(ctx):
         await ctx.send(embed=makeErrorMessage("Your discord account is too new"))
         return
 
-    thisUserPrompts = db.getUserPrompts(user['user_id'], serverId, 5)
+    thisUserPrompts = db.getUserPrompts(user['user_id'],8 )
 
     if thisUserPrompts is None:
         await ctx.send(embed=makeErrorMessage("No prompts found"))
         return
 
     prompts = []
-    embed = discord.Embed(title=f"Your recent prompts in {serverName}.",description="React to replay.", color=0x0000ff)
+    embed = discord.Embed(title=f"Your recent prompts",description="React to replay.", color=0x0000ff)
     for i, prompt in enumerate(thisUserPrompts):
         try:
             prompts.append(prompt['path'])
-            embed.add_field(name=f"{i+1}\u20e3  {prompt['command']}",value=f">  {prompt['prompt'][:30]}...",inline=False)
+            embed.add_field(name=f"{i+1}\u20e3  {prompt['command']}",value=f">  {prompt['prompt'][:40]}...",inline=False)
         except FileNotFoundError:
             pass
     
