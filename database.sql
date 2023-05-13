@@ -32,13 +32,21 @@ DROP TABLE IF EXISTS `voices`;
 CREATE TABLE voices (
     voice_id VARCHAR(255) NOT NULL PRIMARY KEY,
     name VARCHAR(255),
+    shortcut VARCHAR(5),
     accent VARCHAR(255),
     user_id BIGINT REFERENCES users(user_id),
-    server_id BIGINT,
-    server_name VARCHAR(255),
+    server_id BIGINT REFERENCES servers(server_id),
     path VARCHAR(255) NOT NULL,
-    date_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    date_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_server_name UNIQUE (server_id, name)
 );
+
+DROP TABLE IF EXISTS `servers`;
+
+CREATE TABLE servers(
+    server_id BIGINT NOT NULL PRIMARY KEY,
+    server_name VARCHAR(255) NOT NULL,
+)
 
 DROP TABLE IF EXISTS `transactions`;
 
