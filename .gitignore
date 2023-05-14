@@ -4,3 +4,4 @@ __pycache__/
 audioOutput/
 voices/
 voices-backup/
+temp/
