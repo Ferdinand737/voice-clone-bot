@@ -20,7 +20,7 @@ CREATE TABLE users (
     username VARCHAR(255) NOT NULL,
     privileges VARCHAR(255) DEFAULT 'normal_user',
     total_chars_used INT DEFAULT 0,
-    monthly_char_limit INT DEFAULT 6000,
+    monthly_char_limit INT DEFAULT 8000,
     monthly_chars_used INT DEFAULT 0,
     char_credit INT DEFAULT 0,
     last_char_reset TIMESTAMP DEFAULT '1970-01-01 00:00:01',
@@ -45,16 +45,5 @@ DROP TABLE IF EXISTS `servers`;
 
 CREATE TABLE servers(
     server_id BIGINT NOT NULL PRIMARY KEY,
-    server_name VARCHAR(255) NOT NULL,
-)
-
-DROP TABLE IF EXISTS `transactions`;
-
-CREATE TABLE transactions(
-    transaction_id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id BIGINT NOT NULL REFERENCES users(user_id), 
-    payment_method VARCHAR(255) NOT NULL,
-    chars_purchased INT NOT NULL,
-    amount_cad DECIMAL NOT NULL,
-    date_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    server_name VARCHAR(255) NOT NULL
 );

@@ -363,3 +363,30 @@ class DataBase:
             return None
         return result[0]
     
+    def getServerByName(self, serverName):
+        self.connect()
+
+        cursor = self.cnx.cursor()
+        sql = "SELECT * FROM servers WHERE server_name=%s"
+        cursor.execute(sql,(serverName,))
+        result = self.cursorToDict(cursor)
+        self.cnx.commit()
+        cursor.close()
+        if len(result) == 0:
+            return None
+        return result[0]
+    
+    def getServerPrompts(self, userId, serverId, limit):
+        self.connect()
+
+        cursor = self.cnx.cursor()
+        sql = "SELECT * FROM prompts WHERE user_id=%s AND server_id=%s ORDER BY date_time DESC LIMIT %s"
+        cursor.execute(sql,(userId, serverId, limit))
+        result = self.cursorToDict(cursor)
+        self.cnx.commit()
+        cursor.close()
+        if len(result) == 0:
+            return None
+        
+        return result
+    
