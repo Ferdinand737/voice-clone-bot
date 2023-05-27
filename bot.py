@@ -34,6 +34,7 @@ from dataManager import DataManager
 from datetime import datetime, timedelta, timezone
 import shutil
 import random
+from collections import namedtuple
 
 
 load_dotenv()
@@ -101,18 +102,13 @@ def getVoicesEmbed(serverId, serverName):
     return embed
 
 
-def getBuyEmbed():
-    embed = discord.Embed(title="Buy More Characters",color=0x0000ff,description='Please have patience, I may not be able to credit your account immediately.')
-    embed.add_field(name='Buy 10,000 Characters', value='$6.00 CAD')
-    embed.add_field(name='Buy 20,000 Characters', value='$10.00 CAD')
+def getDonateEmbed():
+    embed = discord.Embed(title="Donate",color=0x0000ff,description='API keys are not free, any donation helps.')
+    
+    embed.add_field(name='BTC', value="bc1qg944svjz7wydutldlzzfyxt04jaf5l3gvdquln", inline=False)
+    embed.add_field(name='ETH', value='0x4C5B8E063A2b23926B9621619e90B5560B0F8AFc', inline=False)
+    embed.add_field(name='XMR', value='48fMCSTJqZxFNY5RSwkfoa1GsffjxzZu6Wnk2x49VxKd3UGaaHWd86jTte6fWrtS7m2y6mTFKCCRMBxAVU51zNceAADkLpZ', inline=False)
 
-    embed.add_field(name='e-Transfer',value='9112274@gmail.com\nSend discord User ID in the message eg: 273300302541881344.',inline=False)
-    embed.add_field(name='Pay pal', value='9112274@gmail.com\nSend discord User ID in the message eg: 273300302541881344.',inline=False)
-
-    embed.add_field(name='Crypto',value="""Send me <@273300302541881344> a message from the account you want credited with the blockchain transaction ID.\n
-                                            BTC:   bc1qg944svjz7wydutldlzzfyxt04jaf5l3gvdquln\n
-                                            ETH:   0x4C5B8E063A2b23926B9621619e90B5560B0F8AFc\n
-                                            XMR:   48fMCSTJqZxFNY5RSwkfoa1GsffjxzZu6Wnk2x49VxKd3UGaaHWd86jTte6fWrtS7m2y6mTFKCCRMBxAVU51zNceAADkLpZ""",inline=False)
     embed.set_footer(text=footer_msg)
     return embed
 
@@ -192,6 +188,17 @@ def parseArgs(command):
             options['public'] = 'public'
 
         return options
+    
+    if currentCommand == '!replay' or currentCommand == '!download':
+
+        options = {'serverName': None}
+
+        words = command.split()
+
+        if len(words) >= 2:
+            options['serverName'] = ' '.join(words[1:])
+
+        return options
 
 
 def checkUser(user):
@@ -229,7 +236,6 @@ def startCommand(ctx):
 
     user = checkUser(ctx.author)
     if user is None:
-        ctx.send(embed=makeErrorMessage("Your discord account is too new."))
         return None
 
     return user, serverId, serverName
@@ -259,7 +265,7 @@ async def help(ctx):
         return
 
 
-    commands = ['!speak','!add','!download','!replay','!voices','!delete','!usage','!buy','!about']
+    commands = ['!speak','!add','!download','!replay','!voices','!delete','!usage','!donate','!about']
 
     def getHelpEmbed(title, description, example):
         toReturn = discord.Embed(title=title, color=0x0000ff, description=description)
@@ -269,21 +275,26 @@ async def help(ctx):
     helpList = []
 
     helpList.append(getHelpEmbed('!speak',"""Parrot joins voice your channel and speaks prompt. 
-                                 Use 'gpt' to use your input as a chatgpt prompt.
+                                 Use 'gpt' to use your input as a [ChatGPT](https://chat.openai.com) prompt.
                                  Each voice has a shortcut that can be used instead of the voice name.
                                  Voices and shortcuts are not case-sensetive.""",
                                  """!speak JordanPeterson | say exactly this
-                                    or
                                     !speak JordanPeterson gpt | tell me a story 
-                                    or
                                     !speak jp | say exactly this"""))
+    
     helpList.append(getHelpEmbed('!add', 'Add a voice to your server by uploading file(s).\nAccent required.\nNo spaces allowed in voice name.', "!add JeffKaplan American"))
-    helpList.append(getHelpEmbed('!download', 'View list of recent promts, click reactions to download.', "!download"))
-    helpList.append(getHelpEmbed('!replay', 'View list of recent promts, click reactions to replay.', "!replay"))
+
+    helpList.append(getHelpEmbed('!download', 'View list of recent promts, click reactions to download.', """!download 
+                                                                                                            !download serverName 
+                                                                                                            !download all """))
+    
+    helpList.append(getHelpEmbed('!replay', 'View list of recent promts, click reactions to replay.', """!replay 
+                                                                                                            !replay serverName 
+                                                                                                            !replay all """))
     helpList.append(getVoicesEmbed(serverId, serverName))
-    helpList.append(getHelpEmbed('!delete', 'Delete a voice that you added to your server.',"!delete BenShapiro\nor\n !delete bs"))
+    helpList.append(getHelpEmbed('!delete', 'Delete a voice that you added to your server.',"!delete BenShapiro\n!delete bs"))
     helpList.append(getUsageEmbed(user,ctx.author.display_name))
-    helpList.append(getBuyEmbed())
+    helpList.append(getDonateEmbed())
     helpList.append(getAboutEmbed())
    
     embed = discord.Embed(title="Help",color=0x0000ff, description="Available Commands")
@@ -360,12 +371,6 @@ async def speak(ctx):
 
     await ctx.send("Generating audio...")
 
-    try:
-        voice_client: VoiceClient = await channel.connect()
-    except:
-        await channel.disconnect()
-        return await ctx.send(embed=makeErrorMessage('Failed to connect to the voice channel. Please try again.'))
-
     if args['gpt']:
         try:
             openaiInput = args['prompt'] + " Do not cut off mid sentence."
@@ -381,25 +386,8 @@ async def speak(ctx):
     availableCharTotal = availableMonthlyChars + availableCharCredit
 
     if len(script) > availableCharTotal:
-       
         await voice_client.disconnect()
-        embed = discord.Embed(title="Error", color=0xff0000)
-        embed.add_field(name="Reason", value=f"This response would exceed your available characters\n {user['monthly_char_limit']} characters will be added on {nextCharReset.strftime('%b %-d, %Y')}.\n\nWait or click \U0001F4B0 to buy more characters.")
-        embed.set_footer(text=footer_msg)
-
-        msg = await ctx.send(embed=embed)
-
-        money_bag_emoji = "\U0001F4B0"
-        await msg.add_reaction(money_bag_emoji)
-
-        def check(reaction, user):
-            return user == ctx.author and str(reaction.emoji) == money_bag_emoji
-        try:
-            reaction, user = await bot.wait_for('reaction_add', timeout=60.0, check=check)
-        except asyncio.TimeoutError:
-            pass
-        else:
-            await ctx.send(embed=getBuyEmbed())
+        await ctx.send(embed=makeErrorMessage(f"This response would exceed your available characters ({availableCharTotal}).\n {user['monthly_char_limit']} characters will be added on {nextCharReset.strftime('%b %-d, %Y')}."))
         return
     
     outputPath = dataManager.textToSpeech(args, clonedVoice['voice_id'], user['user_id'], serverId, script)
@@ -407,12 +395,20 @@ async def speak(ctx):
     if len(script) > availableMonthlyChars:
         dataManager.db.updateUserMonthlyCharCount(user['user_id'], user['monthly_char_limit'])
         remainingChars = len(script) - availableMonthlyChars
-        dataManager.db.updateUserCreditCount(user['user_id'],availableCharCredit-remainingChars)
+        dataManager.db.updateUserCreditCount(user['user_id'], availableCharCredit-remainingChars)
     else:
         dataManager.db.updateUserMonthlyCharCount(user['user_id'], user['monthly_chars_used'] + len(script))
 
     dataManager.db.updateUserTotalCharCount(user['user_id'], user['total_chars_used'] + len(script))
+
+    
     audio_source = discord.FFmpegPCMAudio(executable="ffmpeg", source=outputPath)
+
+    try:
+        voice_client: VoiceClient = await channel.connect()
+    except:
+        await channel.disconnect()
+        return await ctx.send(embed=makeErrorMessage('Failed to connect to the voice channel. Please try again.'))
 
     if not voice_client.is_playing():
         voice_client.play(audio_source)
@@ -455,13 +451,13 @@ async def add(ctx):
 
     if args['accent'] is None:
         await ctx.send(embed=makeErrorMessage(f"""Invalid accent.
-                                                Choose one of the following.\n
-                                                American\n
-                                                British\n
-                                                African\n
-                                                Australian\n
-                                                Indian\n
-                                                Try:
+                                                Choose one of the following:\n
+                                                -American
+                                                -British
+                                                -African
+                                                -Australian
+                                                -Indian
+                                                \nTry:
                                                 !add {args['voiceName']} American"""))
         return
 
@@ -505,7 +501,9 @@ async def add(ctx):
 
 
     embed = discord.Embed(title="Saved!", description=f"Voice '{args['voiceName']}' saved successfully.", color=0x00ff00)
-    embed.add_field(name="Command to play",value=f"!speak {args['voiceName']} | your message\nor\n!speak {newVoice['shortcut']} | your message")
+    embed.add_field(name="Commands to play",value=f"""!speak {args['voiceName']} | your message
+                                                        !speak {newVoice['shortcut']} | your message
+                                                        !speak {args['voiceName']} gpt | your prompt""")
     embed.set_footer(text=footer_msg)
 
     await ctx.send(embed=embed)
@@ -515,99 +513,95 @@ async def add(ctx):
 async def add(ctx):
     user,serverId,serverName = startCommand(ctx)
     await ctx.send(embed=getVoicesEmbed(serverId, serverName))
-    
 
-@bot.command(name='download')
-async def download(ctx):
+
+Result = namedtuple('Result', ['paths', 'check'])
+
+async def replayAndDownloadHelper(ctx):
     user,serverId,servername  = startCommand(ctx)
+
+    args = parseArgs(ctx.message.content)
 
     if user is None:
         await ctx.send(embed=makeErrorMessage("Your discord account is too new"))
         return
+    
+    if args['serverName'] is None:
+        prompts = dataManager.db.getServerPrompts(user['user_id'], serverId, 9)
+        where = servername
+    
+    elif args['serverName'] != 'all':
+        server = dataManager.db.getServerByName(args['serverName'])
 
-    thisUserPrompts = dataManager.db.getUserPrompts(user['user_id'],8)
+        if server is None:
+            await ctx.send(embed=makeErrorMessage(f"Could not find server '{args['serverName']}'."))
+            return
 
-    if thisUserPrompts is None:
+        prompts = dataManager.db.getServerPrompts(user['user_id'], server['server_id'], 9)
+
+        where = server['server_name']
+
+    else:
+        prompts = dataManager.db.getUserPrompts(user['user_id'], 9)
+        where = 'all servers'
+
+    if prompts is None:
         await ctx.send(embed=makeErrorMessage("No prompts found"))
         return
-
-   
-    files = []
-    embed = discord.Embed(title=f"Your recent prompts",description="React to download.", color=0x0000ff)
-    for i, prompt in enumerate(thisUserPrompts):
+    
+    paths = []
+    embed = discord.Embed(title=f"Your recent prompts in {where}.",description="React to replay.", color=0x0000ff)
+    for i, prompt in enumerate(prompts):
         try:
-            files.append(discord.File(prompt['path']))
+            paths.append(prompt['path'])
             embed.add_field(name=f"{i+1}\u20e3  {prompt['command']}",value=f">  {prompt['prompt'][:40]}...",inline=False)
         except FileNotFoundError:
             pass
     
-    if len(files) == 0:
-        await ctx.send(embed=makeErrorMessage("No files found"))
+    if len(paths) == 0:
+        await ctx.send(embed=makeErrorMessage("No prompts found"))
         return
    
     embed.set_footer(text=footer_msg)
     msg = await ctx.send(embed=embed)
 
-    for i in range(len(files)):
+    for i in range(len(paths)):
         await msg.add_reaction(f"{i+1}\u20e3")
 
-   
     def check(reaction, user):
-        return user == ctx.author and str(reaction.emoji) in [f"{i+1}\u20e3" for i in range(len(files))]
+        return user == ctx.author and str(reaction.emoji) in [f"{i+1}\u20e3" for i in range(len(paths))]
+
+
+    return Result(paths=paths, check=check)
+
+@bot.command(name='download')
+async def download(ctx):
+   
+    result = await replayAndDownloadHelper(ctx)
+    paths = result.paths
 
     try:
-        reaction, user = await bot.wait_for('reaction_add', timeout=60.0, check=check)
+        reaction, user = await bot.wait_for('reaction_add', timeout=60.0, check=result.check)
     except asyncio.TimeoutError:
         pass
     else:
-        index = [f"{i+1}\u20e3" for i in range(len(files))].index(str(reaction.emoji)) 
-        await ctx.send(file=files[index])
+        index = [f"{i+1}\u20e3" for i in range(len(paths))].index(str(reaction.emoji)) 
+        await ctx.send(file=discord.File(paths[index]))
         await ctx.send("File sent.")
 
 
 @bot.command(name='replay')
 async def replay(ctx):
-    user,serverId,servername  = startCommand(ctx)
 
-    if user is None:
-        await ctx.send(embed=makeErrorMessage("Your discord account is too new"))
-        return
-
-    thisUserPrompts = dataManager.db.getUserPrompts(user['user_id'],8 )
-
-    if thisUserPrompts is None:
-        await ctx.send(embed=makeErrorMessage("No prompts found"))
-        return
-
-    prompts = []
-    embed = discord.Embed(title=f"Your recent prompts",description="React to replay.", color=0x0000ff)
-    for i, prompt in enumerate(thisUserPrompts):
-        try:
-            prompts.append(prompt['path'])
-            embed.add_field(name=f"{i+1}\u20e3  {prompt['command']}",value=f">  {prompt['prompt'][:40]}...",inline=False)
-        except FileNotFoundError:
-            pass
-    
-    if len(prompts) == 0:
-        await ctx.send(embed=makeErrorMessage("No prompts found"))
-        return
-   
-    embed.set_footer(text=footer_msg)
-    msg = await ctx.send(embed=embed)
-
-    for i in range(len(prompts)):
-        await msg.add_reaction(f"{i+1}\u20e3")
-
-   
-    def check(reaction, user):
-        return user == ctx.author and str(reaction.emoji) in [f"{i+1}\u20e3" for i in range(len(prompts))]
+    result = await replayAndDownloadHelper(ctx)
+    paths = result.paths
 
     try:
-        reaction, user = await bot.wait_for('reaction_add', timeout=60.0, check=check)
+        reaction, user = await bot.wait_for('reaction_add', timeout=60.0, check=result.check)
     except asyncio.TimeoutError:
         pass
     else:
-        index = [f"{i+1}\u20e3" for i in range(len(prompts))].index(str(reaction.emoji)) 
+        index = [f"{i+1}\u20e3" for i in range(len(paths))].index(str(reaction.emoji)) 
 
         voice = ctx.author.voice
 
@@ -622,7 +616,7 @@ async def replay(ctx):
         except:
             return await ctx.send(embed=makeErrorMessage('Failed to connect to the voice channel. Please try again.'))
 
-        audio_source = discord.FFmpegPCMAudio(executable="ffmpeg", source=prompts[index])
+        audio_source = discord.FFmpegPCMAudio(executable="ffmpeg", source=paths[index])
 
         if not voice_client.is_playing():
             voice_client.play(audio_source)
@@ -705,10 +699,10 @@ async def about(ctx):
     await ctx.send(embed=getAboutEmbed())
 
 
-@bot.command(name='buy')
-async def buy(ctx):
+@bot.command(name='donate')
+async def donate(ctx):
     startCommand(ctx)
-    await ctx.send(embed=getBuyEmbed())
+    await ctx.send(embed=getDonateEmbed())
 
 
 bot.run(TOKEN)
