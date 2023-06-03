@@ -187,6 +187,12 @@ class ElevenLabs:
 
         response = requests.get(url, headers=headers)
         voice = json.loads(response.text)
+
+
+        if 'detail' in voice:
+            return None
+
         if len(voice['samples'])== 0:
             return None
+        
         return voice
