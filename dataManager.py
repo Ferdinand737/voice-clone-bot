@@ -5,12 +5,14 @@ import shutil
 import json
 
 
+
 class DataManager:
 
     def __init__(self):
         self.eLabs = ElevenLabs()
         self.db = DataBase()
-      
+
+    
     def getVoice(self, serverId, voiceName):
 
         print(f"Getting voice {voiceName}...")
@@ -194,7 +196,10 @@ class DataManager:
 
 
     def textToSpeech(self, args, voiceId, userId, serverId, script):
-   
+
+        debug = script[:40].replace('\n','') + '...'
+
+        print(f"Adding response ({debug}) to database...")
         path = self.db.addPrompt(args, voiceId, userId, serverId, script, len(script))['path']      
 
         parent_dir = os.path.dirname(path)
@@ -202,7 +207,9 @@ class DataManager:
         if not os.path.exists(parent_dir):
             os.makedirs(parent_dir)
 
+        print(f"Requesting audio file from ElevenLabs...")
         self.eLabs.textToSpeech(script, voiceId, path)
+        print(f"Audio file received from ElevenLabs!")
 
         return path
 

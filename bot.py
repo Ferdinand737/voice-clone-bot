@@ -22,7 +22,6 @@
         #Jerry
         #Beth
         
-
 import os
 import discord
 from discord.ext import commands
@@ -35,6 +34,9 @@ from datetime import datetime, timedelta, timezone
 import shutil
 import random
 from collections import namedtuple
+import functools
+import asyncio
+import typing # For typehinting 
 
 
 load_dotenv()
@@ -45,7 +47,6 @@ bot.remove_command('help')
 openai.api_key = os.getenv('OPENAI_TOKEN')
 dataManager = DataManager()
 footer_msg = "This bot was created by: JEFF#1778"
-
 
 def makeErrorMessage(reason):
     embed = discord.Embed(title="Error",color=0xff0000)
@@ -241,6 +242,31 @@ def startCommand(ctx):
     return user, serverId, serverName
 
 
+async def playAudio(ctx, channel, source):
+
+    try:
+        voice_client = await channel.connect()
+    except:
+        return await ctx.send(embed=makeErrorMessage('Failed to connect to the voice channel. Please try again.'))
+
+    audio_source = discord.FFmpegPCMAudio(executable="ffmpeg", source=source)
+
+    if not voice_client.is_playing():
+        voice_client.play(audio_source)
+
+        while voice_client.is_playing():
+            await asyncio.sleep(1)
+        await voice_client.disconnect()
+    else:
+        await ctx.send(embed=makeErrorMessage('I am already playing an audio file. Please wait until I finish.'))
+
+
+async def run_blocking(blocking_func: typing.Callable, *args, **kwargs) -> typing.Any:
+    """Runs a blocking function in a non-blocking way"""
+    func = functools.partial(blocking_func, *args, **kwargs) # `run_in_executor` doesn't support kwargs, `functools.partial` does
+    return await bot.loop.run_in_executor(None, func)
+
+
 @bot.event
 async def on_ready():
     await bot.change_presence(activity=discord.Game(name="!help"))
@@ -345,6 +371,7 @@ async def speak(ctx):
         await ctx.send(embed=makeErrorMessage('You need to be in a voice channel to use this command.'))
         return
 
+    #channel = ctx.author.voice.channel
     channel = voice.channel
 
     if user is None:
@@ -363,7 +390,7 @@ async def speak(ctx):
     if ctx.voice_client:
         await ctx.voice_client.disconnect()
    
-    clonedVoice = dataManager.getVoice(serverId, args['voiceName'])
+    clonedVoice = await run_blocking(dataManager.getVoice, serverId, args['voiceName'])
 
     if clonedVoice is None:
         await ctx.send(embed=makeErrorMessage(f"Could not find voice '{args['voiceName']}'."))
@@ -374,7 +401,9 @@ async def speak(ctx):
     if args['gpt']:
         try:
             openaiInput = args['prompt'] + " Do not cut off mid sentence."
+            print(f"Requesting response from OpenAi for prompt ({args['prompt']})...")
             script = openai.Completion.create(model="text-davinci-003",prompt=openaiInput,temperature=0.7,max_tokens=150)["choices"][0]["text"]
+            print(f"Received response from OpenAi!")
         except:
             await ctx.send(embed=makeErrorMessage("Problem with openAi"))
             return
@@ -386,11 +415,11 @@ async def speak(ctx):
     availableCharTotal = availableMonthlyChars + availableCharCredit
 
     if len(script) > availableCharTotal:
-        await voice_client.disconnect()
+        await channel.disconnect()
         await ctx.send(embed=makeErrorMessage(f"This response would exceed your available characters ({availableCharTotal}).\n {user['monthly_char_limit']} characters will be added on {nextCharReset.strftime('%b %-d, %Y')}."))
         return
     
-    outputPath = dataManager.textToSpeech(args, clonedVoice['voice_id'], user['user_id'], serverId, script)
+    outputPath = await run_blocking(dataManager.textToSpeech,args, clonedVoice['voice_id'], user['user_id'], serverId, script)
 
     if len(script) > availableMonthlyChars:
         dataManager.db.updateUserMonthlyCharCount(user['user_id'], user['monthly_char_limit'])
@@ -401,25 +430,9 @@ async def speak(ctx):
 
     dataManager.db.updateUserTotalCharCount(user['user_id'], user['total_chars_used'] + len(script))
 
+    await playAudio(ctx, channel, outputPath)
     
-    audio_source = discord.FFmpegPCMAudio(executable="ffmpeg", source=outputPath)
-
-    try:
-        voice_client: VoiceClient = await channel.connect()
-    except:
-        await channel.disconnect()
-        return await ctx.send(embed=makeErrorMessage('Failed to connect to the voice channel. Please try again.'))
-
-    if not voice_client.is_playing():
-        voice_client.play(audio_source)
-
-        while voice_client.is_playing():
-            await asyncio.sleep(1)
-        await voice_client.disconnect()
-    else:
-        await ctx.send(embed=makeErrorMessage('I am already playing an audio file. Please wait until I finish.'))
     
-
 @bot.command(name='add')
 async def add(ctx):
     user,serverId,servername  = startCommand(ctx)
@@ -471,7 +484,7 @@ async def add(ctx):
 
     tempPath = f"temp/{random.randint(0, 2**32 - 1)}"
 
-    clonedVoice = dataManager.getVoice(serverId, args['voiceName'])
+    clonedVoice = await run_blocking(dataManager.getVoice, serverId, args['voiceName'])
 
     if clonedVoice:
         await ctx.send(embed=makeErrorMessage("The voice name already exists. Please choose another name."))
@@ -611,21 +624,7 @@ async def replay(ctx):
 
         channel = voice.channel
 
-        try:
-            voice_client: VoiceClient = await channel.connect()
-        except:
-            return await ctx.send(embed=makeErrorMessage('Failed to connect to the voice channel. Please try again.'))
-
-        audio_source = discord.FFmpegPCMAudio(executable="ffmpeg", source=paths[index])
-
-        if not voice_client.is_playing():
-            voice_client.play(audio_source)
-
-            while voice_client.is_playing():
-                await asyncio.sleep(1)
-            await voice_client.disconnect()
-        else:
-            await ctx.send(embed=makeErrorMessage('I am already playing an audio file. Please wait until I finish.'))
+        await playAudio(ctx, channel, paths[index])
         
 
 @bot.command(name='delete')
@@ -651,14 +650,14 @@ async def delete(ctx):
 
         if args['public']:
 
-            voiceToDelete = dataManager.getVoice(None, args['voiceName'])
+            voiceToDelete = await run_blocking(dataManager.getVoice, None, args['voiceName'])
 
             if voiceToDelete is None:
                 await ctx.send(embed=makeErrorMessage(f"Could not find {args['voiceName']}."))
                 return
         else:
 
-            voiceToDelete = dataManager.getVoice(serverId, args['voiceName'])
+            voiceToDelete = await run_blocking(dataManager.getVoice, serverId, args['voiceName'])
 
             if voiceToDelete is None:
                 await ctx.send(embed=makeErrorMessage(f"Could not find {args['voiceName']} in {serverName}"))
@@ -666,7 +665,7 @@ async def delete(ctx):
 
     else:
 
-        voiceToDelete = dataManager.getVoice(serverId, args['voiceName'])
+        voiceToDelete = await run_blocking(dataManager.getVoice, serverId, args['voiceName'])
 
         if voiceToDelete is None:
             await ctx.send(embed=makeErrorMessage(f"Could not find {args['voiceName']}."))
@@ -703,6 +702,7 @@ async def about(ctx):
 async def donate(ctx):
     startCommand(ctx)
     await ctx.send(embed=getDonateEmbed())
+
 
 
 bot.run(TOKEN)

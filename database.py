@@ -325,14 +325,14 @@ class DataBase:
 
         cursor = self.cnx.cursor()
         sql = """
-                SELECT voice_id, COUNT(*) AS occurrences
-                FROM prompts WHERE voice_id IN (SELECT voice_id FROM voices) AND voice_id NOT IN (%s)
-                GROUP BY voice_id
-                ORDER BY occurrences ASC
-                LIMIT 1;
-            """
-        dontPickThese = ','.join(map(str, dontPickThese))
-        cursor.execute(sql,(str(dontPickThese),))
+            SELECT voice_id, COUNT(*) AS occurrences
+            FROM prompts WHERE voice_id IN (SELECT voice_id FROM voices) AND voice_id NOT IN ({})
+            GROUP BY voice_id
+            ORDER BY occurrences ASC
+            LIMIT 1;
+        """.format(','.join(['%s'] * len(dontPickThese)))
+        
+        cursor.execute(sql, dontPickThese)
         result = self.cursorToDict(cursor)
         self.cnx.commit()
         cursor.close()
