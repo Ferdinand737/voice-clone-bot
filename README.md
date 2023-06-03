@@ -2,7 +2,7 @@
 
 # Parrot Discord Bot
 
-[Add this bot to your discord server](https://discord.com/api/oauth2/authorize?client_id=1095014597871804510&permissions=3196992&scope=bot)
+[Add Parrot to your discord server](https://discord.com/api/oauth2/authorize?client_id=1095014597871804510&permissions=3196992&scope=bot)
 
 
 ## About Parrot
