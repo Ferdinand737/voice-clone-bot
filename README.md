@@ -11,11 +11,11 @@ Parrot is an interactive voice cloning bot created using [ElevenLabs](https://be
 The bot takes a voice and a string as inputs, joins your voice channel and speaks the string in the chosen voice. The optional 'gpt' argument uses the input string as a prompt for [ChatGPT](https://chat.openai.com/) and then speaks the response.
 
 
-<center>
-    <video controls="controls">
-        <source type="video/mp4" src="demo.mp4"></source>
-        <p>Your browser does not support the video element.</p>
-    </video>
+<video controls="controls">
+    <source type="video/mp4" src="demo.mp4"></source>
+    <p>Your browser does not support the video element.</p>
+</video>
+
 <br>
 
 ### Example use
@@ -24,4 +24,3 @@ The bot takes a voice and a string as inputs, joins your voice channel and speak
 
 <img src="sc_1.png">
 <img src="sc_2.png">
-</center>
