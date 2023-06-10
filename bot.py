@@ -594,7 +594,7 @@ async def download(ctx):
     paths = result.paths
 
     try:
-        reaction, user = await bot.wait_for('reaction_add', timeout=30.0, check=result.check)
+        reaction, user = await bot.wait_for('reaction_add', timeout=60.0, check=result.check)
     except asyncio.TimeoutError:
         pass
     else:
@@ -610,7 +610,7 @@ async def replay(ctx):
     paths = result.paths
 
     try:
-        reaction, user = await bot.wait_for('reaction_add', timeout=30.0, check=result.check)
+        reaction, user = await bot.wait_for('reaction_add', timeout=60.0, check=result.check)
     except asyncio.TimeoutError:
         pass
     else:
