@@ -12,7 +12,7 @@ The bot takes a voice and a string as inputs, joins your voice channel and speak
 
 ![](demo.mp4)
 <video controls="controls">
-    <source type="video/mp4" src="[demo.mp4](http://GitHub.com/Ferdinand737/voice-clone-bot/./blob/main/demo.mp4)"></source>
+    <source type="video/mp4" src="[demo.mp4](http://raw.githubusercontent.com/Ferdinand/voice-clone-bot/main/demo.mp4)"></source>
     <p>Your browser does not support the video element.</p>
 </video>
 
