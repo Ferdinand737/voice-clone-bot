@@ -12,6 +12,8 @@ The bot takes a voice and a string as inputs, joins your voice channel and speak
 
 ![](demo.mp4)
 
+http://GitHub.com/Ferdinand737/voice-clone-bot/./blob/main/demo.mp4
+
 <br>
 
 ### Example use
