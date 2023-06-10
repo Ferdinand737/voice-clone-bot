@@ -10,9 +10,7 @@
 Parrot is an interactive voice cloning bot created using [ElevenLabs](https://beta.elevenlabs.io/) and [OpenAi](https://platform.openai.com/) APIs.
 The bot takes a voice and a string as inputs, joins your voice channel and speaks the string in the chosen voice. The optional 'gpt' argument uses the input string as a prompt for [ChatGPT](https://chat.openai.com/) and then speaks the response.
 
-![video](https://youtu.be/x7dCfSDZHzk)
-
-<br>
+[![video](http://img.youtube.com/vi/x7dCfSDZHzk/0.jpg)](https://www.youtube.com/watch?v=x7dCfSDZHzk Parrot bot demo)
 
 ### Example use
 
