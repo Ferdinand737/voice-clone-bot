@@ -48,6 +48,32 @@ openai.api_key = os.getenv('OPENAI_TOKEN')
 dataManager = DataManager()
 footer_msg = "This bot was created by: JEFF#1778"
 
+def getHelpEmbed(title, description, example):
+    toReturn = discord.Embed(title=title, color=0x0000ff, description=description)
+    toReturn.add_field(name="Examples", value=example)
+    return toReturn
+
+speakHelp = getHelpEmbed('!speak',"""Parrot joins voice your channel and speaks prompt. 
+                                 Use 'gpt' to use your input as a [ChatGPT](https://chat.openai.com) prompt.
+                                 Each voice has a shortcut that can be used instead of the voice name.
+                                 Voices and shortcuts are not case-sensetive.""",
+                                 """!speak JordanPeterson | say exactly this
+                                    !speak JordanPeterson gpt | tell me a story 
+                                    !speak jp | say exactly this""")
+
+addHelp = getHelpEmbed('!add', 'Add a voice to your server by uploading file(s).\nAccent required.\nNo spaces allowed in voice name.', "!add JeffKaplan American")
+
+downloadHelp = getHelpEmbed('!download', 'View list of recent promts, click reactions to download.', """!download 
+                                                                                                            !download serverName 
+                                                                                                            !download all """)
+
+replayHelp = getHelpEmbed('!replay', 'View list of recent promts, click reactions to replay.', """!replay 
+                                                                                                            !replay serverName 
+                                                                                                            !replay all """)
+
+deleteHelp = getHelpEmbed('!delete', 'Delete a voice that you added to your server.',"!delete BenShapiro\n!delete bs")
+
+
 def makeErrorMessage(reason):
     embed = discord.Embed(title="Error",color=0xff0000)
     embed.add_field(name="Reason",value=reason)
@@ -293,32 +319,14 @@ async def help(ctx):
 
     commands = ['!speak','!add','!download','!replay','!voices','!delete','!usage','!donate','!about']
 
-    def getHelpEmbed(title, description, example):
-        toReturn = discord.Embed(title=title, color=0x0000ff, description=description)
-        toReturn.add_field(name="Examples", value=example)
-        return toReturn
-
     helpList = []
 
-    helpList.append(getHelpEmbed('!speak',"""Parrot joins voice your channel and speaks prompt. 
-                                 Use 'gpt' to use your input as a [ChatGPT](https://chat.openai.com) prompt.
-                                 Each voice has a shortcut that can be used instead of the voice name.
-                                 Voices and shortcuts are not case-sensetive.""",
-                                 """!speak JordanPeterson | say exactly this
-                                    !speak JordanPeterson gpt | tell me a story 
-                                    !speak jp | say exactly this"""))
-    
-    helpList.append(getHelpEmbed('!add', 'Add a voice to your server by uploading file(s).\nAccent required.\nNo spaces allowed in voice name.', "!add JeffKaplan American"))
-
-    helpList.append(getHelpEmbed('!download', 'View list of recent promts, click reactions to download.', """!download 
-                                                                                                            !download serverName 
-                                                                                                            !download all """))
-    
-    helpList.append(getHelpEmbed('!replay', 'View list of recent promts, click reactions to replay.', """!replay 
-                                                                                                            !replay serverName 
-                                                                                                            !replay all """))
+    helpList.append(speakHelp)
+    helpList.append(addHelp)
+    helpList.append(downloadHelp)
+    helpList.append(replayHelp)
     helpList.append(getVoicesEmbed(serverId, serverName))
-    helpList.append(getHelpEmbed('!delete', 'Delete a voice that you added to your server.',"!delete BenShapiro\n!delete bs"))
+    helpList.append(deleteHelp)
     helpList.append(getUsageEmbed(user,ctx.author.display_name))
     helpList.append(getDonateEmbed())
     helpList.append(getAboutEmbed())
@@ -329,18 +337,17 @@ async def help(ctx):
     
     embed.set_footer(text=footer_msg)
 
-
     msg = await ctx.send(embed=embed)
 
     for i in range(len(commands)):
         await msg.add_reaction(f"{i+1}\u20e3")
 
-   
     def check(reaction, user):
         return user == ctx.author and str(reaction.emoji) in [f"{i+1}\u20e3" for i in range(len(helpList))]
+   
 
     try:
-        reaction, user = await bot.wait_for('reaction_add', timeout=60.0, check=check)
+        reaction, user = await bot.wait_for('reaction_add', timeout=30.0, check=check)
     except asyncio.TimeoutError:
         await ctx.send("Timed out. Please try again.")
     else:
@@ -358,11 +365,11 @@ async def speak(ctx):
     serverId = ctx.guild.id
 
     if args is None:
-        await ctx.send(embed=makeErrorMessage('Unable to parse input. Use !help for assistance.'))
+        await ctx.send(embed=speakHelp)
         return
 
     if args['prompt'] is None:
-        await ctx.send(embed=makeErrorMessage('Unable to parse prompt. Use !help for assistance.'))
+        await ctx.send(embed=speakHelp)
         return
 
     voice = ctx.author.voice
@@ -402,7 +409,8 @@ async def speak(ctx):
         try:
             openaiInput = args['prompt'] + " Do not cut off mid sentence."
             print(f"Requesting response from OpenAi for prompt ({args['prompt']})...")
-            script = openai.Completion.create(model="text-davinci-003",prompt=openaiInput,temperature=0.7,max_tokens=150)["choices"][0]["text"]
+            script = await run_blocking(openai.Completion.create,model="text-davinci-003",prompt=openaiInput,temperature=0.7,max_tokens=150)
+            script = script["choices"][0]["text"]
             print(f"Received response from OpenAi!")
         except:
             await ctx.send(embed=makeErrorMessage("Problem with openAi"))
@@ -452,7 +460,7 @@ async def add(ctx):
     #     return
     
     if args['voiceName'] is None:
-        await ctx.send(embed=makeErrorMessage('Unable to parse voice name. Use !help for assistance.'))
+        await ctx.send(embed=addHelp)
         return
 
     if args['public']:
