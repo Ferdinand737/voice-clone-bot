@@ -46,7 +46,7 @@ bot = commands.Bot(command_prefix='!',help_command=None,intents=intents)
 bot.remove_command('help')
 openai.api_key = os.getenv('OPENAI_TOKEN')
 dataManager = DataManager()
-footer_msg = "This bot was created by: JEFF#1778"
+footer_msg = "Please consider donating with !donate"
 
 def getHelpEmbed(title, description, example):
     toReturn = discord.Embed(title=title, color=0x0000ff, description=description)
@@ -130,7 +130,7 @@ def getVoicesEmbed(serverId, serverName):
 
 
 def getDonateEmbed():
-    embed = discord.Embed(title="Donate",color=0x0000ff,description='API keys are not free, any donation helps.')
+    embed = discord.Embed(title="Donate",color=0x0000ff,description="""Support the development of Parrot, a Discord bot created by a dedicated one-person development team. As the sole developer, I am personally funding the expenses for the elevenlabs and OpenAI API keys. Donations received will be used to cover these costs, with no intention of making any profit. Your contributions will directly impact the project's sustainability and expansion, as higher donation amounts will allow for increased character limits and new features. Join me in ensuring the continued existence and growth of Parrot by making a donation today. Without donations, I may be forced to shut down the project, so your support is crucial in keeping Parrot alive.""")
     
     embed.add_field(name='BTC', value="bc1qg944svjz7wydutldlzzfyxt04jaf5l3gvdquln", inline=False)
     embed.add_field(name='ETH', value='0x4C5B8E063A2b23926B9621619e90B5560B0F8AFc', inline=False)
@@ -403,7 +403,7 @@ async def speak(ctx):
         await ctx.send(embed=makeErrorMessage(f"Could not find voice '{args['voiceName']}'."))
         return
 
-    await ctx.send("Generating audio...")
+    await ctx.send("Generating audio...\n\nSupport the development of Parrot by making a donation, helping cover the API fees and keeping the project alive!\n!donate")
 
     if args['gpt']:
         try:
