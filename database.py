@@ -57,11 +57,11 @@ class DataBase:
         return result
 
 
-    def getUser(self, user):
+    def getUser(self, user_id):
         self.connect()
         cursor = self.cnx.cursor()
         sql = "SELECT * FROM users WHERE user_id=%s"
-        cursor.execute(sql,(user.id,))
+        cursor.execute(sql,(user_id,))
         result = self.cursorToDict(cursor)
         self.cnx.commit() 
         cursor.close()
@@ -79,7 +79,7 @@ class DataBase:
         cursor.execute(sql,(user_id,username))
         self.cnx.commit()
         cursor.close()
-        return self.getUser(user)
+        return self.getUser(user_id)
 
 
     def getVoice(self, serverId, voiceName):
@@ -221,7 +221,7 @@ class DataBase:
         cursor.execute(sql, (user_id,))
         self.cnx.commit()
         cursor.close()
-        return
+        return self.getUser(user_id)
 
 
     def updateUserMonthlyCharCount(self, user_id, newMonthlyCharCount):
