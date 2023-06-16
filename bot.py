@@ -269,10 +269,7 @@ def startCommand(ctx):
     if foundServer is None:
         dataManager.db.addServer(serverId,serverName)
 
-
     user = checkUser(ctx.author)
-    if user is None:
-        return None
 
     return user, serverId, serverName
 
