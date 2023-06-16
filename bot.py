@@ -327,13 +327,13 @@ async def on_ready():
     await bot.change_presence(activity=discord.Game(name="!help"))
 
 
-# @bot.event
-# async def on_command_error(ctx, error):
-#     if isinstance(error, commands.CommandNotFound):
-#         print(f"Command not found: {ctx.message.content}")
-#         await help(ctx)
-#     else:
-#         print(error)
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.CommandNotFound):
+        print(f"Command not found: {ctx.message.content}")
+        await help(ctx)
+    else:
+        print(error)
 
 
 @bot.command(name='help')
