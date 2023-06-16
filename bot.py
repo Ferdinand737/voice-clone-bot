@@ -73,6 +73,15 @@ replayHelp = getHelpEmbed('!replay', 'View list of recent promts, click reaction
 
 deleteHelp = getHelpEmbed('!delete', 'Delete a voice that you added to your server.',"!delete BenShapiro\n!delete bs")
 
+def writeMessage(message):
+    with open('message.txt','w') as file:
+        file.write(message)
+    return
+
+def readMessage():
+    with open('message.txt','r') as file:
+        content = file.read()
+    return content
 
 def makeErrorMessage(reason):
     embed = discord.Embed(title="Error",color=0xff0000)
@@ -360,6 +369,14 @@ async def help(ctx):
 async def speak(ctx):
     user,serverId,servername = startCommand(ctx)
 
+    if user is None:
+        await ctx.send(embed=makeErrorMessage("Your discord account is too new."))
+        return
+    
+    if user['privileges'] == 'banned':
+        await ctx.send(embed=makeErrorMessage('You are not allowed to use this command'))
+        return
+
     args = parseArgs(ctx.message.content)
 
     serverId = ctx.guild.id
@@ -381,9 +398,6 @@ async def speak(ctx):
     #channel = ctx.author.voice.channel
     channel = voice.channel
 
-    if user is None:
-        await ctx.send(embed=makeErrorMessage("Your discord account is too new."))
-        return
 
     lastCharReset = user['last_char_reset']
 
@@ -403,7 +417,12 @@ async def speak(ctx):
         await ctx.send(embed=makeErrorMessage(f"Could not find voice '{args['voiceName']}'."))
         return
 
-    await ctx.send("Generating audio...\n\nSupport the development of Parrot by making a donation, helping cover the API fees and keeping the project alive!\n!donate")
+    await ctx.send("Generating audio...")
+
+    try:
+        await ctx.send(readMessage())
+    except FileNotFoundError:
+        print("No Message found")
 
     if args['gpt']:
         try:
@@ -423,7 +442,6 @@ async def speak(ctx):
     availableCharTotal = availableMonthlyChars + availableCharCredit
 
     if len(script) > availableCharTotal:
-        await channel.disconnect()
         await ctx.send(embed=makeErrorMessage(f"This response would exceed your available characters ({availableCharTotal}).\n {user['monthly_char_limit']} characters will be added on {nextCharReset.strftime('%b %-d, %Y')}."))
         return
     
@@ -712,5 +730,18 @@ async def donate(ctx):
     await ctx.send(embed=getDonateEmbed())
 
 
+@bot.command(name='message')
+async def message(ctx):
+    user,serverId,servername = startCommand(ctx)
+
+    if user is None:
+        await ctx.send(embed=makeErrorMessage("Your discord account is too new."))
+        return
+    
+    if user['privileges'] != 'admin':
+        await ctx.send(embed=makeErrorMessage('You are not allowed to use this command'))
+        return
+    
+    writeMessage(ctx.message.content.replace('!message ',''))
 
 bot.run(TOKEN)
