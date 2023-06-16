@@ -91,6 +91,9 @@ def makeErrorMessage(reason):
 
 
 def getUsageEmbed(user, username):
+
+    user, nextCharReset = checkCharacters(user)
+
     embed = discord.Embed(title=username + "'s usage", color=0x0000ff, description="First Prompt: " + str(user['date_time'].strftime('%b %-d, %Y')))
     embed.add_field(name='Privilages',value=str(user['privileges']))
     embed.add_field(name="Total Characters Used", value=str(user['total_chars_used']))
@@ -98,7 +101,7 @@ def getUsageEmbed(user, username):
     embed.add_field(name="Monthly Character Limit", value=str(user['monthly_char_limit']))
     embed.add_field(name="Monthly Characters Remaining", value= str(user['monthly_char_limit'] - user['monthly_chars_used']))
     embed.add_field(name="Character Credit", value=user['char_credit'])
-    embed.add_field(name="Next Character Reset", value=str((user['last_char_reset'] + timedelta(days=30)).strftime('%b %-d, %Y')))
+    embed.add_field(name="Next Character Reset", value=str(nextCharReset.strftime('%b %-d, %Y')))
     embed.set_footer(text=footer_msg)
     return embed
 
@@ -248,7 +251,7 @@ def checkUser(user):
     if date_difference < timedelta(days=30):
         return None
 
-    foundUser = dataManager.db.getUser(user)
+    foundUser = dataManager.db.getUser(user.id)
 
     if foundUser is None:
         foundUser = dataManager.db.addUser(user)
@@ -284,7 +287,6 @@ async def playAudio(ctx, channel, source):
         print(error)
         return 
 
-
     audio_source = discord.FFmpegPCMAudio(executable="ffmpeg", source=source)
 
     if not voice_client.is_playing():
@@ -299,6 +301,20 @@ async def playAudio(ctx, channel, source):
         print(error)
 
 
+def checkCharacters(user):
+
+    lastCharReset = user['last_char_reset']
+
+    days_difference = datetime.now() - lastCharReset
+
+    if days_difference > timedelta(days=30):
+        user = dataManager.db.resetMonthlyUserCharCount(user['user_id'])
+        lastCharReset = user['last_char_reset']
+
+    nextCharReset = lastCharReset + timedelta(days=30)
+
+    return user, nextCharReset
+
 
 async def run_blocking(blocking_func: typing.Callable, *args, **kwargs) -> typing.Any:
     """Runs a blocking function in a non-blocking way"""
@@ -311,13 +327,13 @@ async def on_ready():
     await bot.change_presence(activity=discord.Game(name="!help"))
 
 
-@bot.event
-async def on_command_error(ctx, error):
-    if isinstance(error, commands.CommandNotFound):
-        print(f"Command not found: {ctx.message.content}")
-        await help(ctx)
-    else:
-        print(error)
+# @bot.event
+# async def on_command_error(ctx, error):
+#     if isinstance(error, commands.CommandNotFound):
+#         print(f"Command not found: {ctx.message.content}")
+#         await help(ctx)
+#     else:
+#         print(error)
 
 
 @bot.command(name='help')
@@ -410,15 +426,7 @@ async def speak(ctx):
     #channel = ctx.author.voice.channel
     channel = voice.channel
 
-
-    lastCharReset = user['last_char_reset']
-
-    nextCharReset = lastCharReset + timedelta(days=30)
-
-    days_difference = datetime.now() - lastCharReset
-
-    if days_difference > timedelta(days=30):
-        dataManager.db.resetMonthlyUserCharCount(user['user_id'])
+    user, nextCharReset = checkCharacters(user)
 
     if ctx.voice_client:
         await ctx.voice_client.disconnect()
@@ -452,6 +460,8 @@ async def speak(ctx):
             return
     else:
         script = args['prompt']
+
+    script = script.strip()
 
     availableMonthlyChars = user['monthly_char_limit'] - user['monthly_chars_used']
     availableCharCredit = user['char_credit']
