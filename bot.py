@@ -282,7 +282,11 @@ async def playAudio(ctx, channel, source):
     try:
         voice_client = await channel.connect()
     except:
-        return await ctx.send(embed=makeErrorMessage('Failed to connect to the voice channel. Please try again.'))
+        error = 'Failed to connect to the voice channel. Please try again.'
+        await ctx.send(embed=makeErrorMessage(error))
+        print(error)
+        return 
+
 
     audio_source = discord.FFmpegPCMAudio(executable="ffmpeg", source=source)
 
@@ -293,7 +297,10 @@ async def playAudio(ctx, channel, source):
             await asyncio.sleep(1)
         await voice_client.disconnect()
     else:
-        await ctx.send(embed=makeErrorMessage('I am already playing an audio file. Please wait until I finish.'))
+        error = 'I am already playing an audio file. Please wait until I finish.'
+        await ctx.send(embed=makeErrorMessage(error))
+        print(error)
+
 
 
 async def run_blocking(blocking_func: typing.Callable, *args, **kwargs) -> typing.Any:
@@ -322,7 +329,9 @@ async def help(ctx):
     user,serverId,serverName = startCommand(ctx)
 
     if user is None:
-        await ctx.send(embed=makeErrorMessage("Your discord account is too new."))
+        error = "Your discord account is too new."
+        await ctx.send(embed=makeErrorMessage(error))
+        print(error)
         return
 
 
@@ -370,11 +379,15 @@ async def speak(ctx):
     user,serverId,servername = startCommand(ctx)
 
     if user is None:
-        await ctx.send(embed=makeErrorMessage("Your discord account is too new."))
+        error = "Your discord account is too new."
+        await ctx.send(embed=makeErrorMessage(error))
+        print(error)
         return
     
     if user['privileges'] == 'banned':
-        await ctx.send(embed=makeErrorMessage('You are not allowed to use this command'))
+        error = 'You are not allowed to use this command'
+        await ctx.send(embed=makeErrorMessage(error))
+        print(error)
         return
 
     args = parseArgs(ctx.message.content)
@@ -392,7 +405,9 @@ async def speak(ctx):
     voice = ctx.author.voice
 
     if voice is None:
-        await ctx.send(embed=makeErrorMessage('You need to be in a voice channel to use this command.'))
+        error = 'You need to be in a voice channel to use this command.'
+        await ctx.send(embed=makeErrorMessage(error))
+        print(error)
         return
 
     #channel = ctx.author.voice.channel
@@ -414,7 +429,9 @@ async def speak(ctx):
     clonedVoice = await run_blocking(dataManager.getVoice, serverId, args['voiceName'])
 
     if clonedVoice is None:
-        await ctx.send(embed=makeErrorMessage(f"Could not find voice '{args['voiceName']}'."))
+        error = f"Could not find voice '{args['voiceName']}'."
+        await ctx.send(embed=makeErrorMessage(error))
+        print(error)
         return
 
     await ctx.send("Generating audio...")
@@ -432,7 +449,9 @@ async def speak(ctx):
             script = script["choices"][0]["text"]
             print(f"Received response from OpenAi!")
         except:
-            await ctx.send(embed=makeErrorMessage("Problem with openAi"))
+            error = "Problem with openAi"
+            await ctx.send(embed=makeErrorMessage(error))
+            print(error)
             return
     else:
         script = args['prompt']
@@ -442,7 +461,9 @@ async def speak(ctx):
     availableCharTotal = availableMonthlyChars + availableCharCredit
 
     if len(script) > availableCharTotal:
-        await ctx.send(embed=makeErrorMessage(f"This response would exceed your available characters ({availableCharTotal}).\n {user['monthly_char_limit']} characters will be added on {nextCharReset.strftime('%b %-d, %Y')}."))
+        error = f"This response would exceed your available characters ({availableCharTotal}).\n {user['monthly_char_limit']} characters will be added on {nextCharReset.strftime('%b %-d, %Y')}."
+        await ctx.send(embed=makeErrorMessage(error))
+        print(error)
         return
     
     outputPath = await run_blocking(dataManager.textToSpeech,args, clonedVoice['voice_id'], user['user_id'], serverId, script)
@@ -466,11 +487,13 @@ async def add(ctx):
     args = parseArgs(ctx.message.content)
     
     if args is None:
-        await ctx.send(embed=makeErrorMessage('Unable to parse input. Use !help for assistance.'))
+        await ctx.send(embed=addHelp)
         return
 
     if user is None:
-        await ctx.send(embed=makeErrorMessage("Your discord account is too new."))
+        error = "Your discord account is too new."
+        await ctx.send(embed=makeErrorMessage(error))
+        print(error)
         return
     
     # if user['privileges'] == 'normal_user':
@@ -483,13 +506,15 @@ async def add(ctx):
 
     if args['public']:
         if user['privileges'] != 'admin':
-            await ctx.send(embed=makeErrorMessage("Only admins can add public voices."))
+            error = "Only admins can add public voices."
+            await ctx.send(embed=makeErrorMessage(error))
+            print(error)
             return
         serverId = None
 
 
     if args['accent'] is None:
-        await ctx.send(embed=makeErrorMessage(f"""Invalid accent.
+        error = f"""Invalid accent.
                                                 Choose one of the following:\n
                                                 -American
                                                 -British
@@ -497,13 +522,18 @@ async def add(ctx):
                                                 -Australian
                                                 -Indian
                                                 \nTry:
-                                                !add {args['voiceName']} American"""))
+                                                !add {args['voiceName']} American"""
+        
+        await ctx.send(embed=makeErrorMessage(error))
+        print(error)
         return
 
     files = ctx.message.attachments
 
     if len(files) == 0:
-        await ctx.send(embed=makeErrorMessage("You need to attach files to add a new voice."))
+        error = "You need to attach files to add a new voice."
+        await ctx.send(embed=makeErrorMessage(error))
+        print(error)
         return
 
     await ctx.send("Adding voice...")
@@ -513,7 +543,9 @@ async def add(ctx):
     clonedVoice = await run_blocking(dataManager.getVoice, serverId, args['voiceName'])
 
     if clonedVoice:
-        await ctx.send(embed=makeErrorMessage("The voice name already exists. Please choose another name."))
+        error = "The voice name already exists. Please choose another name."
+        await ctx.send(embed=makeErrorMessage(error))
+        print(error)
         return
 
     if not os.path.exists(tempPath):
@@ -521,14 +553,18 @@ async def add(ctx):
 
     for file in files:
         if file.size >= 10000000:
-            await ctx.send(embed=makeErrorMessage(f"{file.filename} is too large. All files must me under 10Mb."))
+            error = f"{file.filename} is too large. All files must me under 10Mb."
+            await ctx.send(embed=makeErrorMessage(error))
+            print(error)
             shutil.rmtree(tempPath)
             return
             
         allowedTypes = ['audio/aac', 'audio/x-aac', 'audio/x-aiff', 'audio/ogg', 'audio/mpeg', 'audio/mp3', 'audio/mpeg3', 
                         'audio/x-mpeg-3', 'audio/opus', 'audio/wav', 'audio/x-wav', 'audio/webm', 'audio/flac', 'audio/x-flac', 'audio/mp4']
         if file.content_type not in allowedTypes:
-            await ctx.send(embed=makeErrorMessage("Input file must be an audio file"))
+            error = "Input file must be an audio file"
+            await ctx.send(embed=makeErrorMessage(error))
+            print(error)
             shutil.rmtree(tempPath)
             return
 
@@ -562,7 +598,9 @@ async def replayAndDownloadHelper(ctx):
     args = parseArgs(ctx.message.content)
 
     if user is None:
-        await ctx.send(embed=makeErrorMessage("Your discord account is too new"))
+        error = "Your discord account is too new"
+        await ctx.send(embed=makeErrorMessage(error))
+        print(error)
         return
     
     if args['serverName'] is None:
@@ -573,7 +611,9 @@ async def replayAndDownloadHelper(ctx):
         server = dataManager.db.getServerByName(args['serverName'])
 
         if server is None:
-            await ctx.send(embed=makeErrorMessage(f"Could not find server '{args['serverName']}'."))
+            error = f"Could not find server '{args['serverName']}'."
+            await ctx.send(embed=makeErrorMessage(error))
+            print(error)
             return
 
         prompts = dataManager.db.getServerPrompts(user['user_id'], server['server_id'], 9)
@@ -585,7 +625,9 @@ async def replayAndDownloadHelper(ctx):
         where = 'all servers'
 
     if prompts is None:
-        await ctx.send(embed=makeErrorMessage("No prompts found"))
+        error = "No prompts found"
+        await ctx.send(embed=makeErrorMessage(error))
+        print(error)
         return
     
     paths = []
@@ -598,7 +640,9 @@ async def replayAndDownloadHelper(ctx):
             pass
     
     if len(paths) == 0:
-        await ctx.send(embed=makeErrorMessage("No prompts found"))
+        error = "No prompts found"
+        await ctx.send(embed=makeErrorMessage(error))
+        print(error)
         return
    
     embed.set_footer(text=footer_msg)
@@ -645,7 +689,9 @@ async def replay(ctx):
         voice = ctx.author.voice
 
         if voice is None:
-            await ctx.send(embed=makeErrorMessage('You need to be in a voice channel to use this command.'))
+            error = 'You need to be in a voice channel to use this command.'
+            await ctx.send(embed=makeErrorMessage(error))
+            print(error)
             return
 
         channel = voice.channel
@@ -660,7 +706,9 @@ async def delete(ctx):
     args = parseArgs(ctx.message.content)
 
     if user is None:
-        await ctx.send(embed=makeErrorMessage("Your discord account is too new"))
+        error = "Your discord account is too new"
+        await ctx.send(embed=makeErrorMessage(error))
+        print(error)
         return
 
     # if user['privileges'] == 'normal_user':
@@ -668,7 +716,9 @@ async def delete(ctx):
     #     return
 
     if args['public'] and user['privileges'] != 'admin':
-        await ctx.send(embed=makeErrorMessage("Only admins can delete public voices"))
+        error = "Only admins can delete public voices"
+        await ctx.send(embed=makeErrorMessage(error))
+        print(error)
         return
      
 
@@ -679,14 +729,18 @@ async def delete(ctx):
             voiceToDelete = await run_blocking(dataManager.getVoice, None, args['voiceName'])
 
             if voiceToDelete is None:
-                await ctx.send(embed=makeErrorMessage(f"Could not find {args['voiceName']}."))
+                error = f"Could not find {args['voiceName']}."
+                await ctx.send(embed=makeErrorMessage(error))
+                print(error)
                 return
         else:
 
             voiceToDelete = await run_blocking(dataManager.getVoice, serverId, args['voiceName'])
 
             if voiceToDelete is None:
-                await ctx.send(embed=makeErrorMessage(f"Could not find {args['voiceName']} in {serverName}"))
+                error = f"Could not find {args['voiceName']} in {serverName}"
+                await ctx.send(embed=makeErrorMessage(error))
+                print(error)
                 return
 
     else:
@@ -694,11 +748,15 @@ async def delete(ctx):
         voiceToDelete = await run_blocking(dataManager.getVoice, serverId, args['voiceName'])
 
         if voiceToDelete is None:
-            await ctx.send(embed=makeErrorMessage(f"Could not find {args['voiceName']}."))
+            error = f"Could not find {args['voiceName']}."
+            await ctx.send(embed=makeErrorMessage(error))
+            print(error)
             return
 
         if voiceToDelete['user_id'] != user['user_id']:
-            await ctx.send(embed=makeErrorMessage("You can only delete voices that you added."))
+            error = "You can only delete voices that you added."
+            await ctx.send(embed=makeErrorMessage(error))
+            print(error)
             return
 
     dataManager.deleteVoice(voiceToDelete)
@@ -713,7 +771,9 @@ async def usage(ctx):
     user,serverId,servername = startCommand(ctx)
 
     if user is None:
-        await ctx.send(embed=makeErrorMessage("Your discord account is too new."))
+        error = "Your discord account is too new."
+        await ctx.send(embed=makeErrorMessage(error))
+        print(error)
         return
     await ctx.send(embed=getUsageEmbed(user,ctx.author.display_name))
 
@@ -735,11 +795,15 @@ async def message(ctx):
     user,serverId,servername = startCommand(ctx)
 
     if user is None:
-        await ctx.send(embed=makeErrorMessage("Your discord account is too new."))
+        error = "Your discord account is too new."
+        await ctx.send(embed=makeErrorMessage(error))
+        print(error)
         return
     
     if user['privileges'] != 'admin':
-        await ctx.send(embed=makeErrorMessage('You are not allowed to use this command'))
+        error = 'You are not allowed to use this command'
+        await ctx.send(embed=makeErrorMessage(error))
+        print(error)
         return
     
     writeMessage(ctx.message.content.replace('!message ',''))
