@@ -102,7 +102,8 @@ class DataManager:
             for filename in os.listdir(dbVoice['path']):
                 if os.path.isfile(os.path.join(dbVoice['path'], filename)):
                     shutil.move(os.path.join(dbVoice['path'], filename), newPath)
-                    shutil.rmtree(dbVoice['path'])
+                    
+            shutil.rmtree(dbVoice['path'])
 
 
             self.db.updateVoiceId(dbVoice['voice_id'], newVoiceId, newPath)
