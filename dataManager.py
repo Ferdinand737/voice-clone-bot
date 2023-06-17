@@ -51,10 +51,10 @@ class DataManager:
 
                         print(f"Found {voiceName} on ElevenLabs!\nAdding {voiceName} to database...")
                         
-                        self.db.addVoice(voice['voice_id'], voice['name'], voiceDesc['shortcut'], voice['labels']['accent'],serverId, voiceDesc['user_id'], voiceDesc['path'])
+                        self.db.addVoice(voice['voice_id'], voice['name'], voiceDesc['shortcut'], voice['labels']['accent'], serverId, voiceDesc['user_id'], voiceDesc['path'])
                         
                         if not os.path.exists(f"voices/{voice['voice_id']}"):
-                            #The files Local files are missing
+                            #The local files are missing
                             print(f"Missing local voice samples for {voiceName}\nDownloading from ElevenLabs...")
                             for sample in voice['samples']:
                                 path =  os.path.join(voiceDesc['path'],sample['file_name'])
@@ -102,7 +102,8 @@ class DataManager:
             for filename in os.listdir(dbVoice['path']):
                 if os.path.isfile(os.path.join(dbVoice['path'], filename)):
                     shutil.move(os.path.join(dbVoice['path'], filename), newPath)
-                    shutil.rmtree(dbVoice['path'])
+            
+            shutil.rmtree(dbVoice['path'])
 
 
             self.db.updateVoiceId(dbVoice['voice_id'], newVoiceId, newPath)
