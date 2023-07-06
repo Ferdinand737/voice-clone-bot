@@ -464,7 +464,10 @@ async def speak(ctx):
     script = script.strip()
 
     availableMonthlyChars = user['monthly_char_limit'] - user['monthly_chars_used']
+    availableMonthlyChars = 0 if availableMonthlyChars < 0 else availableMonthlyChars
+
     availableCharCredit = user['char_credit']
+
     availableCharTotal = availableMonthlyChars + availableCharCredit
 
     if len(script) > availableCharTotal:
