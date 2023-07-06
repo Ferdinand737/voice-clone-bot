@@ -93,13 +93,15 @@ def makeErrorMessage(reason):
 def getUsageEmbed(user, username):
 
     user, nextCharReset = checkCharacters(user)
+    availableMonthlyChars = 0 if user['monthly_char_limit'] - user['monthly_chars_used'] < 0 else user['monthly_char_limit'] - user['monthly_chars_used']
+
 
     embed = discord.Embed(title=username + "'s usage", color=0x0000ff, description="First Prompt: " + str(user['date_time'].strftime('%b %-d, %Y')))
     embed.add_field(name='Privilages',value=str(user['privileges']))
     embed.add_field(name="Total Characters Used", value=str(user['total_chars_used']))
     embed.add_field(name="Monthly Characters Used", value=str(user['monthly_chars_used']))
     embed.add_field(name="Monthly Character Limit", value=str(user['monthly_char_limit']))
-    embed.add_field(name="Monthly Characters Remaining", value= str(user['monthly_char_limit'] - user['monthly_chars_used']))
+    embed.add_field(name="Monthly Characters Remaining", value= str(availableMonthlyChars))
     embed.add_field(name="Character Credit", value=user['char_credit'])
     embed.add_field(name="Next Character Reset", value=str(nextCharReset.strftime('%b %-d, %Y')))
     embed.set_footer(text=footer_msg)
