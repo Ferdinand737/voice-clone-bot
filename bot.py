@@ -247,7 +247,7 @@ def checkUser(user):
     
     date_difference = now - discordAccountDate
     
-    if date_difference < timedelta(days=30):
+    if date_difference < timedelta(days=30) and not dataManager.db.hasTransactions(user.id):
         return None
 
     foundUser = dataManager.db.getUser(user.id)

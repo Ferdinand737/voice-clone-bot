@@ -389,4 +389,15 @@ class DataBase:
             return None
         
         return result
-    
+
+    def hasTransactions(self, userId):
+        self.connect()
+        
+        cursor = self.cnx.cursor()
+        sql = "SELECT * FROM transactions WHERE user_id=%s"
+        cursor.execute(sql, (userId,))
+        result = self.cursorToDict(cursor)
+        self.cnx.commit()
+        cursor.close()
+
+        return len(result) >= 1
