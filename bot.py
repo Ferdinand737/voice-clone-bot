@@ -46,7 +46,7 @@ bot = commands.Bot(command_prefix='!',help_command=None,intents=intents)
 bot.remove_command('help')
 openai.api_key = os.getenv('OPENAI_TOKEN')
 dataManager = DataManager()
-footer_msg = "Please consider donating with !donate"
+footer_msg = "This bot was created by abraham_jefferson"
 
 def getHelpEmbed(title, description, example):
     toReturn = discord.Embed(title=title, color=0x0000ff, description=description)
@@ -109,11 +109,12 @@ def getUsageEmbed(user, username):
 
 
 def getAboutEmbed():
-    embed = discord.Embed(title="About Parrot",color=0x0000ff, description="""[Add Parrot to your server](https://discord.com/api/oauth2/authorize?client_id=1095014597871804510&permissions=3196992&scope=bot)\n
-                                                                            [GitHub](https://github.com/Ferdinand737/voice-clone-bot)\n
-                                                                            I built this bot using the [ElevenLabs](https://beta.elevenlabs.io/) and [OpenAi](https://platform.openai.com/) APIs. 
+    embed = discord.Embed(title="About Parrot",color=0x0000ff, description="""[Add Parrot](https://discord.com/api/oauth2/authorize?client_id=1095014597871804510&permissions=3196992&scope=bot)
+                                                                            [website](https://parrotbot.me/)
+                                                                            [GitHub](https://github.com/Ferdinand737/voice-clone-bot)
+                                                                            \nI built this bot using the [ElevenLabs](https://beta.elevenlabs.io/) and [OpenAi](https://platform.openai.com/) APIs. 
                                                                             Contact me <@273300302541881344> if you have any questions, suggestions or find any bugs.""")
-    embed.add_field(name="Technologies Used", value="Implemented with python + discord library.\nMySql for data storage.\nHosted on my own server in the garage.\nIcon design by <@274019867764588544>.",inline=False)
+    embed.add_field(name="Technologies Used", value="Implemented with python + discord library.\nMySql for data storage.\nHosted on my own server.\nIcon design by <@274019867764588544>.",inline=False)
     embed.set_footer(text=footer_msg)
     return embed
 
@@ -143,13 +144,9 @@ def getVoicesEmbed(serverId, serverName):
     return embed
 
 
-def getDonateEmbed():
-    embed = discord.Embed(title="Donate",color=0x0000ff,description="""Support the development of Parrot, a Discord bot created by a dedicated one-person development team. As the sole developer, I am personally funding the expenses for the elevenlabs and OpenAI API keys. Donations received will be used to cover these costs, with no intention of making any profit. Your contributions will directly impact the project's sustainability and expansion, as higher donation amounts will allow for increased character limits and new features. Join me in ensuring the continued existence and growth of Parrot by making a donation today. Without donations, I may be forced to shut down the project, so your support is crucial in keeping Parrot alive.""")
+def getBuyEmbed():
+    embed = discord.Embed(title="Buy Characters",color=0x0000ff,description="""Visit https://parrotbot.me to buy more characters""")
     
-    embed.add_field(name='BTC', value="bc1qg944svjz7wydutldlzzfyxt04jaf5l3gvdquln", inline=False)
-    embed.add_field(name='ETH', value='0x4C5B8E063A2b23926B9621619e90B5560B0F8AFc', inline=False)
-    embed.add_field(name='XMR', value='48fMCSTJqZxFNY5RSwkfoa1GsffjxzZu6Wnk2x49VxKd3UGaaHWd86jTte6fWrtS7m2y6mTFKCCRMBxAVU51zNceAADkLpZ', inline=False)
-
     embed.set_footer(text=footer_msg)
     return embed
 
@@ -350,7 +347,7 @@ async def help(ctx):
         return
 
 
-    commands = ['!speak','!add','!download','!replay','!voices','!delete','!usage','!donate','!about']
+    commands = ['!speak','!add','!download','!replay','!voices','!delete','!usage','!buy','!about']
 
     helpList = []
 
@@ -361,7 +358,7 @@ async def help(ctx):
     helpList.append(getVoicesEmbed(serverId, serverName))
     helpList.append(deleteHelp)
     helpList.append(getUsageEmbed(user,ctx.author.display_name))
-    helpList.append(getDonateEmbed())
+    helpList.append(getBuyEmbed())
     helpList.append(getAboutEmbed())
    
     embed = discord.Embed(title="Help",color=0x0000ff, description="Available Commands")
@@ -473,7 +470,8 @@ async def speak(ctx):
     availableCharTotal = availableMonthlyChars + availableCharCredit
 
     if len(script) > availableCharTotal:
-        error = f"This response would exceed your available characters ({availableCharTotal}).\n {user['monthly_char_limit']} characters will be added on {nextCharReset.strftime('%b %-d, %Y')}."
+        error = f"""This response would exceed your available characters ({availableCharTotal}).\n {user['monthly_char_limit']} characters will be added on {nextCharReset.strftime('%b %-d, %Y')}.
+        Visit https://parrotbot.me to buy more characters."""
         await ctx.send(embed=makeErrorMessage(error))
         print(error)
         return
@@ -796,10 +794,10 @@ async def about(ctx):
     await ctx.send(embed=getAboutEmbed())
 
 
-@bot.command(name='donate')
-async def donate(ctx):
+@bot.command(name='buy')
+async def buy(ctx):
     startCommand(ctx)
-    await ctx.send(embed=getDonateEmbed())
+    await ctx.send(embed=getBuyEmbed())
 
 
 @bot.command(name='message')
