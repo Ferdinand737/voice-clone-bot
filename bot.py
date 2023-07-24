@@ -440,10 +440,10 @@ async def speak(ctx):
 
     await ctx.send("Generating audio...")
 
-    try:
+    message = readMessage()
+
+    if len(message) > 0:
         await ctx.send(readMessage())
-    except FileNotFoundError:
-        print("No Message found")
 
     if args['gpt']:
         try:
@@ -816,6 +816,6 @@ async def message(ctx):
         print(error)
         return
     
-    writeMessage(ctx.message.content.replace('!message ',''))
+    writeMessage(ctx.message.content.replace('!message','').strip())
 
 bot.run(TOKEN)
