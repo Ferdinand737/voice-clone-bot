@@ -41,8 +41,10 @@ import typing # For typehinting
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
-intents = discord.Intents.all()
-bot = commands.Bot(command_prefix='!',help_command=None,intents=intents)
+intents = discord.Intents.default()
+intents.messages = True
+intents.message_content = True  # This is to allow the bot to see message content, especially useful after newer API changes
+bot = commands.Bot(command_prefix='!', help_command=None, intents=intents)
 bot.remove_command('help')
 openai.api_key = os.getenv('OPENAI_TOKEN')
 dataManager = DataManager()
