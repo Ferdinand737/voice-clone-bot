@@ -2,8 +2,9 @@
 
 # Parrot Discord Bot
 
-[Add Parrot to your discord server](https://discord.com/api/oauth2/authorize?client_id=1095014597871804510&permissions=3196992&scope=bot)
+I shut downt the public bot because I could not get verified for 100+ discord servers
 
+When I have time I will make an easily deployable version so that anyone can deploy it locally.
 
 ## About Parrot
 
